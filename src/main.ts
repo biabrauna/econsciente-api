@@ -1,51 +1,39 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import * as express from 'express';
+
+const server = express();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(server),
+  );
   
-  // Enable validation globally
-  app.useGlobalPipes(new ValidationPipe());
+  // Configuração para CORS, se necessário
+  app.enableCors();
   
-  // Configure CORS with the same settings as your Express app
-  const allowedOrigins = [
-    'https://econsciente-app.netlify.app',
-    'http://localhost:3000',
-    'http://localhost:5173',
-    // Add more origins as needed
-  ];
+  // Configuração de prefixo global, se necessário
+  // app.setGlobalPrefix('api');
   
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, etc)
-      if (!origin) {
-        return callback(null, true);
-      }
-      
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        // For development/testing - accept any origin
-        // In production, you might want to remove this
-        return callback(null, true);
-      }
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  });
+  await app.init();
   
-  // Optional: Log middleware for debugging
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin || 'unknown'}`);
-    next();
-  });
-  
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`Application is running on port ${port}`);
-  console.log(`CORS is configured for: ${allowedOrigins.join(', ')} and all origins in development`);
+  return app;
 }
-bootstrap();
+
+// Para ambiente de desenvolvimento local
+if (process.env.NODE_ENV !== 'production') {
+  bootstrap().then(app => {
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`Aplicação rodando na porta ${port}`);
+    });
+  });
+}
+
+// Isso é necessário para o ambiente serverless da Vercel
+export default async (req, res) => {
+  const app = await bootstrap();
+  server(req, res);
+};
