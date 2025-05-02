@@ -1,0 +1,24 @@
+import { Controller, Post, Get, Body } from '@nestjs/common';
+import { DesafiosService } from './desafios.service';
+import { CreateDesafioDto } from './dto/create-desafio.dto';
+import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
+
+@Controller()
+export class DesafiosController {
+  constructor(private desafiosService: DesafiosService) {}
+
+  @Post('desafios')
+  create(@Body() createDesafioDto: CreateDesafioDto) {
+    return this.desafiosService.create(createDesafioDto);
+  }
+
+  @Get('desafios')
+  findAll() {
+    return this.desafiosService.findAll();
+  }
+
+  @Post('desafiosConcluidos')
+  createDesafioConcluido(@Body() createDesafioConcluidoDto: CreateDesafioConcluidoDto) {
+    return this.desafiosService.createDesafioConcluido(createDesafioConcluidoDto);
+  }
+}
