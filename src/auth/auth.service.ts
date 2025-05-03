@@ -25,9 +25,10 @@ export class AuthService {
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Create user
-    const user = await this.prisma.user.create({
-      data: {
+    try {
+      // Create user
+      const user = await this.prisma.user.create({
+        data: {
         name,
         email,
         password: passwordHash,
@@ -36,11 +37,12 @@ export class AuthService {
         pontos: 0,
         seguidores: 0,
         seguindo: 0
-      }
-    });
-
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+      }});
+      const { password: _, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    } catch {
+      console.log('Erro ao criar usuário');
+    }
   }
 
   async login(loginDto: LoginDto) {
@@ -51,8 +53,8 @@ export class AuthService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password || '');
-    if (!isPasswordValid) {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {C
       throw new UnauthorizedException('Senha inválida');
     }
 
