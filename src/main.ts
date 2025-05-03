@@ -24,6 +24,7 @@ if (process.env.NODE_ENV !== 'production') {
 export default async (req, res) => {
   const app = await bootstrap();
   const expressInstance = app.getHttpAdapter().getInstance();
+  console.log("DEU CERTO")
   
   // Processar a requisição usando o Express
   return expressInstance(req, res);
