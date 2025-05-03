@@ -53,7 +53,7 @@ export class AuthService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password || '');
     if (!isPasswordValid) {
       throw new UnauthorizedException('Senha inválida');
     }
