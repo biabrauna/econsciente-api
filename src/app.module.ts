@@ -3,9 +3,13 @@ import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { DesafiosModule } from './desafios/desafios.module';
+import { ProfilePicModule } from './profile-pic/profile-pic.module';
+import { PostsModule } from './posts/posts.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule],
+  imports: [AuthModule, PrismaModule, UsersModule, PostsModule, DesafiosModule, ProfilePicModule],
   controllers: [AppController],
   providers: [AppService],
 })
