@@ -1,31 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
-  
-  // Se estiver rodando em ambiente local (não serverless)
-  if (process.env.NODE_ENV !== 'production') {
-    const port = process.env.PORT || 3000;
-    await app.listen(port);
-    console.log(`Aplicação rodando na porta ${port}`);
-  }
-  
-  return app;
-}
 
-// Isso serve para desenvolvimento local
-if (process.env.NODE_ENV !== 'production') {
-  bootstrap();
-}
+  // Swagger config
+  const config = new DocumentBuilder()
+    .setTitle('Minha API')
+    .setDescription('Documentação Swagger gerada automaticamente')
+    .setVersion('1.0')
+    .build();
 
-// Esta é a função que a Vercel irá chamar
-export default async (req, res) => {
-  const app = await bootstrap();
-  const expressInstance = app.getHttpAdapter().getInstance();
-  console.log("DEU CERTO")
-  
-  // Processar a requisição usando o Express
-  return expressInstance(req, res);
-};
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
+
+  // Railway usa porta dinâmica
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+
+  console.log(`App rodando na porta ${port}`);
+  console.log(`Swagger disponível em http://localhost:${port}/api-docs`);
+}
+bootstrap();
