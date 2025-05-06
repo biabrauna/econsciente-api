@@ -7,10 +7,23 @@ import { DesafiosModule } from './desafios/desafios.module';
 import { ProfilePicModule } from './profile-pic/profile-pic.module';
 import { PostsModule } from './posts/posts.module';
 import { UsersModule } from './users/users.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { FallbackController } from './fallback.controller';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UsersModule, PostsModule, DesafiosModule, ProfilePicModule],
-  controllers: [AppController],
+  imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'client', 'dist'),
+    }),
+    AuthModule,
+    PrismaModule,
+    UsersModule,
+    PostsModule,
+    DesafiosModule,
+    ProfilePicModule,
+  ],
+  controllers: [AppController, FallbackController],
   providers: [AppService],
 })
 export class AppModule {}
