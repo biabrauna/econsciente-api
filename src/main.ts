@@ -1,9 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as session from 'express-session';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(
+    session({
+      secret: 'sdaslfhksfjkadslçdfjlaskjfadsklçfkadsçfkal',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24, // 1 day
+        secure: true, // set to true if using HTTPS
+      },
+    })
+  );
   app.enableCors({
     origin: ['https://econsciente-app.netlify.app', 'http://localhost:5173', 'http://localhost:3000'],
     methods: 'GET, POST, PUT, DELETE',

@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -9,7 +14,8 @@ export class AuthService {
   constructor(private prisma: PrismaService) {}
 
   async register(registerDto: RegisterDto) {
-    const { name, email, password, confirmPassword, age, biografia } = registerDto;
+    const { name, email, password, confirmPassword, age, biografia } =
+      registerDto;
 
     if (password !== confirmPassword) {
       throw new BadRequestException('As senhas devem ser iguais');
@@ -29,15 +35,17 @@ export class AuthService {
       // Create user
       const user = await this.prisma.user.create({
         data: {
-        name,
-        email,
-        password: passwordHash,
-        age,
-        biografia: biografia || '',
-        pontos: 0,
-        seguidores: 0,
-        seguindo: 0
-      }});
+          name,
+          email,
+          password: passwordHash,
+          age,
+          biografia: biografia || '',
+          pontos: 0,
+          seguidores: 0,
+          seguindo: 0,
+        },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...userWithoutPassword } = user;
       return userWithoutPassword;
     } catch {
@@ -45,9 +53,9 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, req?: any) {
     const { email, password } = loginDto;
-    
+
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
@@ -58,10 +66,15 @@ export class AuthService {
       throw new UnauthorizedException('Senha inválida');
     }
 
+    // Store userId in session if req is available
+    if (req && req.session) {
+      req.session.userId = user.id;
+    }
+
     return {
       message: 'Login realizado com sucesso',
       userId: user.id,
-      name: user.name
+      name: user.name,
     };
   }
 }
