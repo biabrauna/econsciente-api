@@ -17,7 +17,7 @@ async function bootstrap() {
     })
   );
   app.enableCors({
-    origin: ['https://econsciente-app.netlify.app', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: ['https://econsciente-app.netlify.app', 'http://localhost:5174', 'http://localhost:3000'],
     methods: 'GET, POST, PUT, DELETE',
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',

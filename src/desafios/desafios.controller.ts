@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query } from '@nestjs/common';
 import { DesafiosService } from './desafios.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
 import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
@@ -20,5 +20,10 @@ export class DesafiosController {
   @Post('desafiosConcluidos')
   createDesafioConcluido(@Body() createDesafioConcluidoDto: CreateDesafioConcluidoDto) {
     return this.desafiosService.createDesafioConcluido(createDesafioConcluidoDto);
+  }
+
+  @Get('desafios/search')
+  searchDesafio(@Query('search') search: string) {
+    return this.desafiosService.searchDesafio(search);
   }
 }

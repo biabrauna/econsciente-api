@@ -22,4 +22,15 @@ export class DesafiosService {
       data: createDesafioConcluidoDto
     });
   }
+
+  async searchDesafio(search: string) {
+    return this.prisma.desafios.findMany({
+      where: {
+        desafios: {
+          contains: search,
+          mode: 'insensitive',
+        }
+      }
+    });
+  }
 }

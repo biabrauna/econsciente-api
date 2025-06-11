@@ -66,11 +66,6 @@ export class AuthService {
       throw new UnauthorizedException('Senha inválida');
     }
 
-    // Store userId in session if req is available
-    if (req && req.session) {
-      req.session.userId = user.id;
-    }
-
     return {
       message: 'Login realizado com sucesso',
       userId: user.id,

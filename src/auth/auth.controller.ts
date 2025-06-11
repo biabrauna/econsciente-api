@@ -31,14 +31,4 @@ export class AuthController {
       });
     });
   }
-
-  @Post('session-check')
-  @HttpCode(HttpStatus.OK)
-  async sessionCheck(@Req() req) {
-    if (req.session && req.session.userId) {
-      return { loggedIn: true, userId: req.session.userId };
-    } else {
-      return { loggedIn: false };
-    }
-  }
 }
