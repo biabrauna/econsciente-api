@@ -7,9 +7,10 @@ import { DesafiosModule } from './desafios/desafios.module';
 import { ProfilePicModule } from './profile-pic/profile-pic.module';
 import { PostsModule } from './posts/posts.module';
 import { UsersModule } from './users/users.module';
+import { VisionModule } from './vision/vision.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UsersModule, PostsModule, DesafiosModule, ProfilePicModule],
+  imports: [AuthModule, PrismaModule, UsersModule, PostsModule, DesafiosModule, ProfilePicModule, VisionModule],
   controllers: [AppController],
   providers: [AppService],
 })
