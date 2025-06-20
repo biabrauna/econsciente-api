@@ -8,10 +8,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async register(registerDto: RegisterDto) {
     const { name, email, password, confirmPassword, age, biografia } =
@@ -66,8 +70,11 @@ export class AuthService {
       throw new UnauthorizedException('Senha inválida');
     }
 
+    const payload = { sub: user.id, email: user.email };
+    const access_token = this.jwtService.sign(payload);
+
     return {
-      message: 'Login realizado com sucesso',
+      access_token,
       userId: user.id,
       name: user.name,
     };
