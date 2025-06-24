@@ -1,10 +1,10 @@
 import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
 import { ProfilePicService } from './profile-pic.service';
 import { CreateProfilePicDto } from './dto/create-profile-pic.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller('profilePic')
+@Controller('profile-pic')
 export class ProfilePicController {
   constructor(private profilePicService: ProfilePicService) {}
 

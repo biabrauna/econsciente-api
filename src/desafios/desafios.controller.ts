@@ -2,10 +2,10 @@ import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
 import { DesafiosService } from './desafios.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
 import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller()
+@Controller('desafios')
 export class DesafiosController {
   constructor(private desafiosService: DesafiosService) {}
 

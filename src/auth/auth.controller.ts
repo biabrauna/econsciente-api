@@ -4,6 +4,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -15,8 +16,8 @@ export class AuthController {
 
   @Post('user')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto, @Req() req) {
-    return this.authService.login(loginDto, req);
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 
   @Post('logout')
@@ -33,7 +34,6 @@ export class AuthController {
     });
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   getProfile(@Request() req) {
     return req.user;

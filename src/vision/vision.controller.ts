@@ -5,7 +5,8 @@ import {
     HttpException, 
     HttpStatus,
     UsePipes,
-    ValidationPipe
+    ValidationPipe,
+    UseGuards
   } from '@nestjs/common';
   import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
   import { PythonVisionService } from './python-vision.service';
@@ -13,8 +14,10 @@ import {
     ChallengeVerificationDto, 
     ChallengeVerificationResponse 
   } from './dto/challenge-verification.dto';
+  import { JwtAuthGuard } from '../auth/jwt-auth.guard';
   
   @ApiTags('vision')
+  @UseGuards(JwtAuthGuard)
   @Controller('vision')
   export class VisionController {
     constructor(private readonly pythonVisionService: PythonVisionService) {}
