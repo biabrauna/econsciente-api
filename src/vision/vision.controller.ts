@@ -8,16 +8,17 @@ import {
     ValidationPipe,
     UseGuards
   } from '@nestjs/common';
-  import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+  import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
   import { PythonVisionService } from './python-vision.service';
   import { 
     ChallengeVerificationDto, 
     ChallengeVerificationResponse 
   } from './dto/challenge-verification.dto';
-  import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+  import { CombinedAuthGuard } from '../auth/combined-auth.guard';
   
   @ApiTags('vision')
-  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(CombinedAuthGuard)
   @Controller('vision')
   export class VisionController {
     constructor(private readonly pythonVisionService: PythonVisionService) {}

@@ -10,7 +10,15 @@ import { UsersModule } from './users/users.module';
 import { VisionModule } from './vision/vision.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UsersModule, PostsModule, DesafiosModule, ProfilePicModule, VisionModule],
+  imports: [
+    AuthModule,
+    PrismaModule,
+    UsersModule,
+    PostsModule,
+    DesafiosModule,
+    ProfilePicModule,
+    VisionModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

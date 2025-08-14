@@ -1,15 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
 import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Injectable()
+@UseGuards(JwtAuthGuard)
 export class DesafiosService {
   constructor(private prisma: PrismaService) {}
 
   async create(createDesafioDto: CreateDesafioDto) {
     return this.prisma.desafios.create({
-      data: createDesafioDto
+      data: createDesafioDto,
     });
   }
 
@@ -17,9 +19,11 @@ export class DesafiosService {
     return this.prisma.desafios.findMany();
   }
 
-  async createDesafioConcluido(createDesafioConcluidoDto: CreateDesafioConcluidoDto) {
+  async createDesafioConcluido(
+    createDesafioConcluidoDto: CreateDesafioConcluidoDto,
+  ) {
     return this.prisma.desafiosConcluidos.create({
-      data: createDesafioConcluidoDto
+      data: createDesafioConcluidoDto,
     });
   }
 
@@ -29,8 +33,8 @@ export class DesafiosService {
         desafios: {
           contains: search,
           mode: 'insensitive',
-        }
-      }
+        },
+      },
     });
   }
 }
