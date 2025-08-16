@@ -1,39 +1,73 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsNumber, MinLength, MaxLength } from 'class-validator';
 
 export class UpdateUserDto {
   @IsString()
-  @ApiProperty()
   @IsOptional()
+  @MinLength(2, { message: 'Nome deve ter pelo menos 2 caracteres' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
+  @ApiProperty({ 
+    example: 'João Silva', 
+    description: 'Nome completo do usuário',
+    minLength: 2,
+    maxLength: 100,
+    required: false
+  })
   name?: string;
 
-  @IsEmail()
-  @ApiProperty()
+  @IsEmail({}, { message: 'Email deve ter um formato válido' })
   @IsOptional()
+  @ApiProperty({ 
+    example: 'joao@email.com', 
+    description: 'Email do usuário',
+    required: false
+  })
   email?: string;
 
   @IsString()
-  @ApiProperty()
   @IsOptional()
+  @ApiProperty({ 
+    example: '25', 
+    description: 'Idade do usuário',
+    required: false
+  })
   age?: string;
 
   @IsString()
-  @ApiProperty()
   @IsOptional()
+  @MaxLength(500, { message: 'Biografia deve ter no máximo 500 caracteres' })
+  @ApiProperty({ 
+    example: 'Desenvolvedor apaixonado por sustentabilidade', 
+    description: 'Biografia do usuário',
+    maxLength: 500,
+    required: false
+  })
   biografia?: string;
 
-  @IsNumber()
+  @IsNumber({}, { message: 'Pontos deve ser um número válido' })
   @IsOptional()
-  @ApiProperty()
+  @ApiProperty({ 
+    example: 150, 
+    description: 'Pontos acumulados pelo usuário',
+    required: false
+  })
   pontos?: number;
 
-  @IsNumber()
+  @IsNumber({}, { message: 'Seguidores deve ser um número válido' })
   @IsOptional()
-  @ApiProperty()
+  @ApiProperty({ 
+    example: 42, 
+    description: 'Número de seguidores',
+    required: false
+  })
   seguidores?: number;
 
-  @IsNumber()
-  @ApiProperty()
+  @IsNumber({}, { message: 'Seguindo deve ser um número válido' })
   @IsOptional()
+  @ApiProperty({ 
+    example: 38, 
+    description: 'Número de pessoas que o usuário segue',
+    required: false
+  })
   seguindo?: number;
 }

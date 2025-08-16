@@ -2,9 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(timeout 15 npm start)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(npm run start:*)",
+      "Bash(curl:*)",
+      "Bash(npm run test:*)",
+      "Bash(npx jest:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "defaultMode": "acceptEdits"
   }
 }

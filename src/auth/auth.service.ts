@@ -3,16 +3,18 @@ import {
   BadRequestException,
   NotFoundException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -37,7 +39,6 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, salt);
 
     try {
-      // Create user
       const user = await this.prisma.user.create({
         data: {
           name,
@@ -50,18 +51,14 @@ export class AuthService {
           seguindo: 0,
         },
       });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _, ...userWithoutPassword } = user;
+      const { password, ...userWithoutPassword } = user;
       return userWithoutPassword;
     } catch {
-      console.log('Erro ao criar usuário');
+      this.logger.error('Erro ao criar usuário');
     }
   }
 
-  async login(
-    loginDto: LoginDto,
-    req?: { session?: { userId?: string; sessionHash?: string } },
-  ) {
+  async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -77,38 +74,10 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email };
     const access_token = this.jwtService.sign(payload);
 
-    // Create session hash with password + time
-    if (req && req.session) {
-      const currentTime = Date.now().toString();
-      const sessionData = password + currentTime;
-      const sessionHash = crypto
-        .createHash('sha256')
-        .update(sessionData)
-        .digest('hex');
-
-      req.session.userId = user.id;
-      req.session.sessionHash = sessionHash;
-    }
-
     return {
       access_token,
       userId: user.id,
       name: user.name,
     };
-  }
-
-  async validateSession(req: {
-    session?: { userId?: string; sessionHash?: string };
-  }) {
-    if (req.session && req.session.userId && req.session.sessionHash) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: req.session.userId },
-      });
-      if (user) {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      }
-    }
-    return null;
   }
 }

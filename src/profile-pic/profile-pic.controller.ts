@@ -8,11 +8,11 @@ import {
 } from '@nestjs/swagger';
 import { ProfilePicService } from './profile-pic.service';
 import { CreateProfilePicDto } from './dto/create-profile-pic.dto';
-import { CombinedAuthGuard } from '../auth/combined-auth.guard';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('profile-pic')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(CombinedAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('profile-pic')
 export class ProfilePicController {
   constructor(private profilePicService: ProfilePicService) {}
@@ -20,7 +20,10 @@ export class ProfilePicController {
   @Post()
   @ApiOperation({ summary: 'Criar nova foto de perfil' })
   @ApiBody({ type: CreateProfilePicDto })
-  @ApiResponse({ status: 201, description: 'Foto de perfil criada com sucesso' })
+  @ApiResponse({
+    status: 201,
+    description: 'Foto de perfil criada com sucesso',
+  })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
   create(@Body() createProfilePicDto: CreateProfilePicDto) {

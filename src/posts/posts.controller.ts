@@ -8,11 +8,11 @@ import {
 } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
-import { CombinedAuthGuard } from '../auth/combined-auth.guard';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('posts')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(CombinedAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('posts')
 export class PostsController {
   constructor(private postsService: PostsService) {}

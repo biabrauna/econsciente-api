@@ -10,11 +10,11 @@ import {
 import { DesafiosService } from './desafios.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
 import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
-import { CombinedAuthGuard } from '../auth/combined-auth.guard';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('desafios')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(CombinedAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('desafios')
 export class DesafiosController {
   constructor(private desafiosService: DesafiosService) {}

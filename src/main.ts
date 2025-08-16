@@ -46,6 +46,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common'; // NOVO IMPORT
 import session from 'express-session';
+import { CustomLoggerService } from './common/logger/custom-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -116,10 +117,22 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  console.log(`App rodando na porta ${port}`);
-  console.log(`Swagger disponível em http://localhost:${port}/api-docs`);
-  console.log(
-    '🔍 Módulo de Visão Computacional ativo em /vision/verify-challenge',
-  );
+  const logger = app.get(CustomLoggerService);
+  
+  logger.log('Application started successfully', {
+    port,
+    environment: process.env.NODE_ENV || 'development',
+    type: 'startup',
+  });
+  
+  logger.log('Swagger documentation available', {
+    url: `http://localhost:${port}/api-docs`,
+    type: 'startup',
+  });
+  
+  logger.log('Vision module active', {
+    endpoint: '/vision/verify-challenge',
+    type: 'startup',
+  });
 }
 bootstrap();
