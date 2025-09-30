@@ -12,7 +12,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
   exports: [AuthService, JwtAuthGuard, JwtModule],
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET,
+      secret: process.env.JWT_SECRET || 'fallback-secret-for-build-only',
       signOptions: { expiresIn: '1h' },
     }),
   ],

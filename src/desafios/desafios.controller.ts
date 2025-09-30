@@ -11,6 +11,7 @@ import { DesafiosService } from './desafios.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
 import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('desafios')
 @ApiBearerAuth('JWT-auth')
@@ -30,11 +31,23 @@ export class DesafiosController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os desafios' })
-  @ApiResponse({ status: 200, description: 'Lista de desafios' })
+  @ApiOperation({ summary: 'Listar todos os desafios com paginação' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Número da página',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Itens por página',
+  })
+  @ApiResponse({ status: 200, description: 'Lista paginada de desafios' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  findAll() {
-    return this.desafiosService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.desafiosService.findAll(paginationDto);
   }
 
   @Post('concluidos')

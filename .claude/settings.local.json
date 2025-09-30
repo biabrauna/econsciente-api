@@ -8,7 +8,12 @@
       "Bash(npm run test:*)",
       "Bash(npx jest:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": [],

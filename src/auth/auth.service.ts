@@ -46,15 +46,13 @@ export class AuthService {
           password: passwordHash,
           age,
           biografia: biografia || '',
-          pontos: 0,
-          seguidores: 0,
-          seguindo: 0,
         },
       });
-      const { password, ...userWithoutPassword } = user;
+      const { password: _, ...userWithoutPassword } = user;
       return userWithoutPassword;
-    } catch {
-      this.logger.error('Erro ao criar usuário');
+    } catch (error) {
+      this.logger.error('Erro ao criar usuário', error);
+      throw new BadRequestException('Erro ao criar usuário');
     }
   }
 
@@ -66,7 +64,11 @@ export class AuthService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password || '');
+    if (!user.password) {
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Senha inválida');
     }

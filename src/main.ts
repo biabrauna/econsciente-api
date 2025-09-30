@@ -1,69 +1,13 @@
-// import { NestFactory } from '@nestjs/core';
-// import { AppModule } from './app.module';
-// import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-// import session from 'express-session';
-
-// async function bootstrap() {
-//   const app = await NestFactory.create(AppModule);
-//   app.use(
-//     session({
-//       secret: 'sdaslfhksfjkadslçdfjlaskjfadsklçfkadsçfkal',
-//       resave: false,
-//       saveUninitialized: false,
-//       cookie: {
-//         maxAge: 1000 * 60 * 60 * 24, // 1 day
-//         secure: true, // set to true if using HTTPS
-//       },
-//     })
-//   );
-//   app.enableCors({
-//     origin: ['https://econsciente-app.netlify.app', 'http://localhost:5174', 'http://localhost:5173', 'http://localhost:3000'],
-//     methods: 'GET, POST, PUT, DELETE',
-//     credentials: true,
-//     allowedHeaders: 'Content-Type, Authorization',
-//   });
-//   // Swagger config
-//   const config = new DocumentBuilder()
-//     .setTitle('Minha API')
-//     .setDescription('Documentação Swagger gerada automaticamente')
-//     .setVersion('1.0')
-//     .build();
-
-//   const document = SwaggerModule.createDocument(app, config);
-//   SwaggerModule.setup('api-docs', app, document);
-
-//   // Railway usa porta dinâmica
-//   const port = process.env.PORT || 3000;
-//   await app.listen(port);
-
-//   console.log(`App rodando na porta ${port}`);
-//   console.log(`Swagger disponível em http://localhost:${port}/api-docs`);
-// }
-// bootstrap();
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common'; // NOVO IMPORT
-import session from 'express-session';
+import { ValidationPipe } from '@nestjs/common';
 import { CustomLoggerService } from './common/logger/custom-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(
-    session({
-      secret: 'sdaslfhksfjkadslçdfjlaskjfadsklçfkadsçfkal',
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        maxAge: 1000 * 60 * 60 * 24, // 1 day
-        secure: true, // set to true if using HTTPS
-      },
-    }),
-  );
-
-  // NOVO: Pipe de validação global para o módulo Vision
+  // Pipe de validação global
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -72,13 +16,15 @@ async function bootstrap() {
     }),
   );
 
+  // CORS configuration from environment
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+  ];
+
   app.enableCors({
-    origin: [
-      'https://econsciente-app.netlify.app',
-      'http://localhost:5175',
-      'http://localhost:5173',
-      'http://localhost:3000',
-    ],
+    origin: corsOrigins,
     methods: 'GET, POST, PUT, DELETE',
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',

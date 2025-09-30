@@ -6,6 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,10 +15,12 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
@@ -27,48 +30,84 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Listar todos os usuários',
-    description: 'Retorna uma lista com todos os usuários cadastrados no sistema, excluindo informações sensíveis como senhas.'
+    description:
+      'Retorna uma lista paginada com todos os usuários cadastrados no sistema, excluindo informações sensíveis como senhas.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+    description: 'Número da página',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 10,
+    description: 'Itens por página',
+  })
+  @ApiResponse({
+    status: 200,
     description: 'Lista de usuários retornada com sucesso',
     schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-          name: { type: 'string', example: 'João Silva' },
-          email: { type: 'string', example: 'joao@email.com' },
-          age: { type: 'string', example: '25' },
-          biografia: { type: 'string', example: 'Desenvolvedor apaixonado por sustentabilidade' },
-          pontos: { type: 'number', example: 150 },
-          seguidores: { type: 'number', example: 42 },
-          seguindo: { type: 'number', example: 38 }
-        }
-      }
-    }
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+              name: { type: 'string', example: 'João Silva' },
+              email: { type: 'string', example: 'joao@email.com' },
+              age: { type: 'number', example: 25 },
+              biografia: {
+                type: 'string',
+                example: 'Desenvolvedor apaixonado por sustentabilidade',
+              },
+              pontos: { type: 'number', example: 150 },
+              seguidores: { type: 'number', example: 42 },
+              seguindo: { type: 'number', example: 38 },
+            },
+          },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 100 },
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+            totalPages: { type: 'number', example: 10 },
+            hasNextPage: { type: 'boolean', example: true },
+            hasPreviousPage: { type: 'boolean', example: false },
+          },
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Token de acesso inválido ou ausente' })
+  @ApiResponse({
+    status: 401,
+    description: 'Token de acesso inválido ou ausente',
+  })
   @ApiResponse({ status: 500, description: 'Erro interno do servidor' })
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.usersService.findAll(paginationDto);
   }
 
   @Get(':id')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Buscar usuário por ID',
-    description: 'Retorna os dados de um usuário específico baseado no ID fornecido.'
+    description:
+      'Retorna os dados de um usuário específico baseado no ID fornecido.',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'ID único do usuário no formato ObjectId do MongoDB',
-    example: '507f1f77bcf86cd799439011'
+    example: '507f1f77bcf86cd799439011',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Dados do usuário retornados com sucesso',
     schema: {
       type: 'object',
@@ -77,15 +116,24 @@ export class UsersController {
         name: { type: 'string', example: 'João Silva' },
         email: { type: 'string', example: 'joao@email.com' },
         age: { type: 'string', example: '25' },
-        biografia: { type: 'string', example: 'Desenvolvedor apaixonado por sustentabilidade' },
+        biografia: {
+          type: 'string',
+          example: 'Desenvolvedor apaixonado por sustentabilidade',
+        },
         pontos: { type: 'number', example: 150 },
         seguidores: { type: 'number', example: 42 },
-        seguindo: { type: 'number', example: 38 }
-      }
-    }
+        seguindo: { type: 'number', example: 38 },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado com o ID fornecido' })
-  @ApiResponse({ status: 401, description: 'Token de acesso inválido ou ausente' })
+  @ApiResponse({
+    status: 404,
+    description: 'Usuário não encontrado com o ID fornecido',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token de acesso inválido ou ausente',
+  })
   @ApiResponse({ status: 500, description: 'Erro interno do servidor' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);

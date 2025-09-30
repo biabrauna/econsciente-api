@@ -1,14 +1,16 @@
-import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('posts')
 @ApiBearerAuth('JWT-auth')
@@ -28,10 +30,12 @@ export class PostsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os posts' })
-  @ApiResponse({ status: 200, description: 'Lista de posts' })
+  @ApiOperation({ summary: 'Listar todos os posts com paginação' })
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Número da página' })
+  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Itens por página' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de posts' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  findAll() {
-    return this.postsService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.postsService.findAll(paginationDto);
   }
 }

@@ -8,45 +8,65 @@ datasource db {
 }
 
 model User {
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  email   String   @unique
-  name    String
-  age     String
-  password String
-  pontos Int?
-  biografia String?
-  seguidores Int?
-  seguindo Int?
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  email               String                 @unique
+  name                String
+  age                 Int
+  password            String
+  pontos              Int                    @default(0)
+  biografia           String?
+  seguidores          Int                    @default(0)
+  seguindo            Int                    @default(0)
+  posts               Posts[]
+  profilePics         ProfilePic[]
+  desafiosConcluidos  DesafiosConcluidos[]
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 }
 
 model Desafios {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  desafios String
-  valor Int
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
+  desafios            String
+  valor               Int
+  desafiosConcluidos  DesafiosConcluidos[]
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@index([desafios])
 }
 
 model DesafiosConcluidos {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  desafioId String
-  userId String
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  desafioId   String    @db.ObjectId
+  desafio     Desafios  @relation(fields: [desafioId], references: [id], onDelete: Cascade)
+  userId      String    @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@index([desafioId])
+  @@index([userId])
+  @@index([userId, desafioId])
 }
 
 model Posts {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String
-  url String
-  likes Int
-} 
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-model ProfilePic {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String
-  name String
-  url String
+  @@index([userId])
+  @@index([createdAt])
 }
 
-model Login{
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  email String
-  password String
+model ProfilePic {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

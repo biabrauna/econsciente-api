@@ -24,14 +24,14 @@ export class UpdateUserDto {
   })
   email?: string;
 
-  @IsString()
+  @IsNumber({}, { message: 'Idade deve ser um número válido' })
   @IsOptional()
-  @ApiProperty({ 
-    example: '25', 
+  @ApiProperty({
+    example: 25,
     description: 'Idade do usuário',
     required: false
   })
-  age?: string;
+  age?: number;
 
   @IsString()
   @IsOptional()
