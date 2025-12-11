@@ -14,13 +14,19 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { CustomLoggerService } from './common/logger/custom-logger.service';
+import { ConquistasModule } from './conquistas/conquistas.module';
+import { NotificacoesModule } from './notificacoes/notificacoes.module';
+import { FollowModule } from './follow/follow.module';
+import { OnboardingModule } from './onboarding/onboarding.module';
+import { ComentariosModule } from './comentarios/comentarios.module';
+import { SessionsModule } from './sessions/sessions.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 seconds
-        limit: 10, // 10 requests per minute
+        limit: 100, // 100 requests per minute
       },
     ]),
     AuthModule,
@@ -30,6 +36,12 @@ import { CustomLoggerService } from './common/logger/custom-logger.service';
     DesafiosModule,
     ProfilePicModule,
     VisionModule,
+    ConquistasModule,
+    NotificacoesModule,
+    FollowModule,
+    OnboardingModule,
+    ComentariosModule,
+    SessionsModule,
   ],
   controllers: [AppController],
   providers: [

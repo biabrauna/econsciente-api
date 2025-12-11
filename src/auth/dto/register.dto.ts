@@ -3,12 +3,9 @@ import {
   IsNotEmpty,
   MinLength,
   IsOptional,
-  IsInt,
-  Min,
-  Max,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 
 export class RegisterDto {
   @ApiProperty({ example: 'John', type: String })
@@ -29,13 +26,10 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'Confirmação de senha é obrigatória' })
   confirmPassword: string;
 
-  @ApiProperty({ example: 19, type: Number })
-  @IsNotEmpty({ message: 'A idade é obrigatória' })
-  @Type(() => Number)
-  @IsInt({ message: 'A idade deve ser um número inteiro' })
-  @Min(13, { message: 'Idade mínima é 13 anos' })
-  @Max(120, { message: 'Idade máxima é 120 anos' })
-  age: number;
+  @ApiProperty({ example: '2000-01-15', type: String })
+  @IsNotEmpty({ message: 'A data de nascimento é obrigatória' })
+  @IsDateString({}, { message: 'Data de nascimento deve ser uma data válida no formato YYYY-MM-DD' })
+  dataNascimento: string;
 
   @ApiProperty({
     example: 'Eu sou jogadora de basquete',

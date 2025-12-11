@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards, Param } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,6 +6,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiQuery,
+  ApiParam,
 } from '@nestjs/swagger';
 import { DesafiosService } from './desafios.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
@@ -71,5 +72,15 @@ export class DesafiosController {
   @ApiResponse({ status: 401, description: 'Token inválido' })
   searchDesafio(@Query('search') search: string) {
     return this.desafiosService.searchDesafio(search);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Buscar desafio por ID' })
+  @ApiParam({ name: 'id', description: 'ID do desafio' })
+  @ApiResponse({ status: 200, description: 'Desafio encontrado' })
+  @ApiResponse({ status: 404, description: 'Desafio não encontrado' })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  findOne(@Param('id') id: string) {
+    return this.desafiosService.findOne(id);
   }
 }

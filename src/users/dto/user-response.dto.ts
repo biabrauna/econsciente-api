@@ -11,8 +11,8 @@ export class UserResponseDto {
   @ApiProperty({ example: 'joao@email.com', description: 'Email do usuário' })
   email: string;
 
-  @ApiProperty({ example: '25', description: 'Idade do usuário' })
-  age: string;
+  @ApiProperty({ example: '2000-01-15', description: 'Data de nascimento do usuário' })
+  dataNascimento: Date;
 
   @ApiProperty({ 
     example: 'Desenvolvedor apaixonado por sustentabilidade', 

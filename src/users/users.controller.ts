@@ -31,9 +31,9 @@ export class UsersController {
 
   @Get()
   @ApiOperation({
-    summary: 'Listar todos os usuários',
+    summary: 'Listar/Buscar usuários',
     description:
-      'Retorna uma lista paginada com todos os usuários cadastrados no sistema, excluindo informações sensíveis como senhas.',
+      'Retorna uma lista paginada com todos os usuários cadastrados no sistema ou busca por nome, excluindo informações sensíveis como senhas.',
   })
   @ApiQuery({
     name: 'page',
@@ -46,6 +46,12 @@ export class UsersController {
     required: false,
     example: 10,
     description: 'Itens por página',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    example: 'João',
+    description: 'Buscar usuários por nome',
   })
   @ApiResponse({
     status: 200,
@@ -91,8 +97,8 @@ export class UsersController {
     description: 'Token de acesso inválido ou ausente',
   })
   @ApiResponse({ status: 500, description: 'Erro interno do servidor' })
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.usersService.findAll(paginationDto);
+  findAll(@Query() paginationDto: PaginationDto, @Query('search') search?: string) {
+    return this.usersService.findAll(paginationDto, search);
   }
 
   @Get(':id')

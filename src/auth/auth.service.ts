@@ -4,12 +4,15 @@ import {
   NotFoundException,
   UnauthorizedException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { SessionsService } from '../sessions/sessions.service';
 
 @Injectable()
 export class AuthService {
@@ -18,10 +21,12 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => SessionsService))
+    private sessionsService: SessionsService,
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { name, email, password, confirmPassword, age, biografia } =
+    const { name, email, password, confirmPassword, dataNascimento, biografia } =
       registerDto;
 
     if (password !== confirmPassword) {
@@ -34,6 +39,23 @@ export class AuthService {
       throw new BadRequestException('O email já está em uso');
     }
 
+    // Validar idade mínima (13 anos)
+    const birthDate = new Date(dataNascimento);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+
+    const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+
+    if (actualAge < 13) {
+      throw new BadRequestException('Você deve ter pelo menos 13 anos para se cadastrar');
+    }
+
+    if (actualAge > 120) {
+      throw new BadRequestException('Data de nascimento inválida');
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
@@ -44,7 +66,7 @@ export class AuthService {
           name,
           email,
           password: passwordHash,
-          age,
+          dataNascimento: new Date(dataNascimento),
           biografia: biografia || '',
         },
       });
@@ -56,7 +78,7 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, ipAddress?: string, userAgent?: string) {
     const { email, password } = loginDto;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -76,10 +98,29 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email };
     const access_token = this.jwtService.sign(payload);
 
+    // Criar sessão no banco de dados
+    try {
+      await this.sessionsService.createSession(user.id, ipAddress, userAgent);
+      this.logger.log(`Sessão criada para usuário ${user.email} (IP: ${ipAddress})`);
+    } catch (error) {
+      this.logger.error(`Erro ao criar sessão: ${error.message}`);
+    }
+
     return {
       access_token,
       userId: user.id,
       name: user.name,
     };
+  }
+
+  async logout(userId: string) {
+    try {
+      await this.sessionsService.invalidateAllUserSessions(userId);
+      this.logger.log(`Logout realizado para usuário ${userId}`);
+      return { message: 'Logout realizado com sucesso' };
+    } catch (error) {
+      this.logger.error(`Erro ao fazer logout: ${error.message}`);
+      throw new BadRequestException('Erro ao fazer logout');
+    }
   }
 }

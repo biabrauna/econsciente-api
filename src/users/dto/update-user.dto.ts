@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, IsOptional, IsNumber, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsNumber, MinLength, MaxLength, IsDateString } from 'class-validator';
 
 export class UpdateUserDto {
   @IsString()
   @IsOptional()
   @MinLength(2, { message: 'Nome deve ter pelo menos 2 caracteres' })
   @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
-  @ApiProperty({ 
-    example: 'João Silva', 
+  @ApiProperty({
+    example: 'João Silva',
     description: 'Nome completo do usuário',
     minLength: 2,
     maxLength: 100,
@@ -17,21 +17,21 @@ export class UpdateUserDto {
 
   @IsEmail({}, { message: 'Email deve ter um formato válido' })
   @IsOptional()
-  @ApiProperty({ 
-    example: 'joao@email.com', 
+  @ApiProperty({
+    example: 'joao@email.com',
     description: 'Email do usuário',
     required: false
   })
   email?: string;
 
-  @IsNumber({}, { message: 'Idade deve ser um número válido' })
+  @IsDateString({}, { message: 'Data de nascimento deve ser uma data válida' })
   @IsOptional()
   @ApiProperty({
-    example: 25,
-    description: 'Idade do usuário',
+    example: '1990-01-15',
+    description: 'Data de nascimento do usuário',
     required: false
   })
-  age?: number;
+  dataNascimento?: string;
 
   @IsString()
   @IsOptional()

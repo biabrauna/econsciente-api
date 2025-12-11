@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsUrl } from 'class-validator';
 
 export class CreateProfilePicDto {
   @IsString()
@@ -13,6 +13,7 @@ export class CreateProfilePicDto {
   name: string;
 
   @IsString()
+  @IsUrl({}, { message: 'A URL fornecida é inválida' })
   @ApiProperty()
   @IsNotEmpty({ message: 'A URL é obrigatória' })
   url: string;

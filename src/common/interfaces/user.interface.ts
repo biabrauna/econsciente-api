@@ -2,7 +2,7 @@ export interface UserPayload {
   id: string;
   email: string;
   name: string;
-  age: number;
+  dataNascimento: Date;
   biografia?: string;
   pontos: number;
   seguidores: number;

@@ -11,15 +11,24 @@ model User {
   id                  String                 @id @default(auto()) @map("_id") @db.ObjectId
   email               String                 @unique
   name                String
-  age                 Int
+  dataNascimento      DateTime?
   password            String
   pontos              Int                    @default(0)
+  nivel               Int                    @default(1)
+  xp                  Int                    @default(0)
   biografia           String?
   seguidores          Int                    @default(0)
   seguindo            Int                    @default(0)
+  onboardingCompleted Boolean                @default(false)
+  onboardingSteps     String?                // JSON: {"profilePic": false, "bio": false, "firstChallenge": false}
   posts               Posts[]
   profilePics         ProfilePic[]
   desafiosConcluidos  DesafiosConcluidos[]
+  conquistasUsuarios  ConquistaUsuario[]
+  notificacoes        Notificacao[]
+  seguindoRelation    Follow[]               @relation("UserFollowing")
+  seguidoresRelation  Follow[]               @relation("UserFollowers")
+  sessions            Session[]
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
 }
@@ -49,14 +58,30 @@ model DesafiosConcluidos {
 }
 
 model Posts {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String      @db.ObjectId
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url         String
+  likes       Int         @default(0)
+  comentarios Comentario[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Comentario {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  url       String
-  likes     Int      @default(0)
+  userName  String
+  texto     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([postId])
   @@index([userId])
   @@index([createdAt])
 }
@@ -69,4 +94,77 @@ model ProfilePic {
   url       String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Conquista {
+  id                  String                @id @default(auto()) @map("_id") @db.ObjectId
+  nome                String                @unique
+  descricao           String
+  icone               String
+  tipo                String                // 'desafios', 'pontos', 'social', 'perfil'
+  criterio            String                // JSON string com condições
+  pontosRecompensa    Int                   @default(0)
+  conquistasUsuarios  ConquistaUsuario[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@index([tipo])
+}
+
+model ConquistaUsuario {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String      @db.ObjectId
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conquistaId   String      @db.ObjectId
+  conquista     Conquista   @relation(fields: [conquistaId], references: [id], onDelete: Cascade)
+  desbloqueadaEm DateTime   @default(now())
+
+  @@unique([userId, conquistaId])
+  @@index([userId])
+  @@index([conquistaId])
+}
+
+model Notificacao {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipo      String   // 'conquista', 'seguidor', 'like', 'comentario'
+  titulo    String
+  mensagem  String
+  lida      Boolean  @default(false)
+  metadata  String?  // JSON string com dados extras
+  createdAt DateTime @default(now())
+
+  @@index([userId, lida])
+  @@index([createdAt])
+}
+
+model Follow {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  followerId  String   @db.ObjectId
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String   @db.ObjectId
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String   @unique
+  isActive     Boolean  @default(true)
+  ipAddress    String?
+  userAgent    String?
+  metadata     String?  // JSON com dados extras da sessão
+  lastActivity DateTime @default(now())
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([userId])
+  @@index([expiresAt])
 }

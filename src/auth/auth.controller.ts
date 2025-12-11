@@ -148,4 +148,24 @@ export class AuthController {
   me(@Request() req: { user?: any }) {
     return req.user;
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Logout do usuário (invalida todas as sessões)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Logout realizado com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Logout realizado com sucesso' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  async logout(@Request() req: any) {
+    return this.authService.logout(req.user.id);
+  }
 }
