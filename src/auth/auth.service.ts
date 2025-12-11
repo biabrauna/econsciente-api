@@ -96,7 +96,13 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, email: user.email };
+
+    // Log do JWT_SECRET (apenas primeiros caracteres por segurança)
+    const secret = process.env.JWT_SECRET || 'UNDEFINED';
+    console.log('[AuthService] Gerando token com JWT_SECRET:', secret.substring(0, 10) + '...');
+
     const access_token = this.jwtService.sign(payload);
+    console.log('[AuthService] Token gerado:', access_token.substring(0, 30) + '...');
 
     // Criar sessão no banco de dados
     try {
@@ -106,10 +112,12 @@ export class AuthService {
       this.logger.error(`Erro ao criar sessão: ${error.message}`);
     }
 
+    // Return complete user object instead of just userId and name
+    const { password: _, ...userWithoutPassword } = user;
+
     return {
       access_token,
-      userId: user.id,
-      name: user.name,
+      user: userWithoutPassword,
     };
   }
 

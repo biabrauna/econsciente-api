@@ -19,7 +19,7 @@ export class ProfilePicService {
 
   async create(createProfilePicDto: CreateProfilePicDto) {
     // Cria/atualiza a foto de perfil e adiciona 5 pontos
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: any) => {
       // Deleta foto antiga se existir (constraint unique no userId)
       await tx.profilePic.deleteMany({
         where: { userId: createProfilePicDto.userId },

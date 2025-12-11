@@ -107,7 +107,7 @@ export class UsersService {
       const hasNewBio = updateUserDto.biografia && updateUserDto.biografia.trim() !== '';
 
       // Atualiza o usuário e adiciona pontos se for a primeira bio
-      const result = await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx: any) => {
         const updated = await tx.user.update({
           where: { id },
           data: {

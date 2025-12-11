@@ -17,7 +17,7 @@ export class PostsService {
 
   async create(createPostDto: CreatePostDto) {
     // Cria o post e adiciona 3 pontos
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: any) => {
       const post = await tx.posts.create({
         data: {
           userId: createPostDto.userId,

@@ -74,11 +74,11 @@ export class ConquistasService {
     });
 
     const conquistasMap = new Map(
-      conquistasUsuario.map(c => [c.conquistaId, c.desbloqueadaEm])
+      conquistasUsuario.map((c: any) => [c.conquistaId, c.desbloqueadaEm])
     );
 
-    return todasConquistas.map(conquista => {
-      const desbloqueadaEm = conquistasMap.get(conquista.id);
+    return todasConquistas.map((conquista: any) => {
+      const desbloqueadaEm = conquistasMap.get(conquista.id) as Date | undefined;
       return {
         id: conquista.id,
         nome: conquista.nome,
@@ -121,7 +121,7 @@ export class ConquistasService {
     }
 
     // Desbloqueia e adiciona pontos ao usuário em uma transação
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       // Cria o registro de conquista desbloqueada
       await tx.conquistaUsuario.create({
         data: {

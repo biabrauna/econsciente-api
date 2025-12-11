@@ -45,7 +45,7 @@ export class FollowService {
     }
 
     // Cria o relacionamento e atualiza contadores em transação
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: any) => {
       // Cria o follow
       const follow = await tx.follow.create({
         data: {
@@ -115,7 +115,7 @@ export class FollowService {
     }
 
     // Remove o relacionamento e atualiza contadores em transação
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       // Deleta o follow
       await tx.follow.delete({
         where: {
@@ -199,7 +199,7 @@ export class FollowService {
         },
       });
 
-      return followers.map(f => f.follower);
+      return followers.map((f: any) => f.follower);
     } catch (error) {
       this.logger.error(`Erro ao buscar seguidores: ${error.message}`);
       return [];
@@ -229,7 +229,7 @@ export class FollowService {
         },
       });
 
-      return following.map(f => f.following);
+      return following.map((f: any) => f.following);
     } catch (error) {
       this.logger.error(`Erro ao buscar seguindo: ${error.message}`);
       return [];

@@ -1,4 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { PassportModule } from '@nestjs/passport';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
@@ -12,9 +14,24 @@ import { SessionsModule } from '../sessions/sessions.module';
   providers: [AuthService, JwtStrategy, JwtAuthGuard, PrismaService],
   exports: [AuthService, JwtAuthGuard, JwtModule],
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'fallback-secret-for-build-only',
-      signOptions: { expiresIn: '30d' }, // Token JWT válido por 30 dias
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+
+        if (!secret) {
+          throw new Error('JWT_SECRET is not defined in environment variables');
+        }
+
+        console.log('[AuthModule] Configurando JwtModule com JWT_SECRET:', secret.substring(0, 10) + '...');
+
+        return {
+          secret: secret,
+          signOptions: { expiresIn: '30d' }, // Token JWT válido por 30 dias
+        };
+      },
     }),
     forwardRef(() => SessionsModule),
   ],

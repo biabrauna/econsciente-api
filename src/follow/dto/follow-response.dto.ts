@@ -26,4 +26,7 @@ export class FollowerDto {
 
   @ApiProperty({ example: 150, description: 'Pontos do usuário' })
   pontos: number;
+
+  @ApiProperty({ example: 'Amante da natureza', description: 'Biografia do usuário', required: false })
+  biografia?: string;
 }

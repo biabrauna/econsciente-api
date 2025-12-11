@@ -11,6 +11,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_SECRET is not defined in environment variables');
     }
 
+    console.log('[JwtStrategy] Inicializado com JWT_SECRET:', secret.substring(0, 10) + '...');
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -18,13 +20,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: number; email: string }) {
+  async validate(payload: { sub: string; email: string }) {
+    console.log('[JwtStrategy] Validating token payload:', { sub: payload.sub, email: payload.email });
+
     const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub.toString() },
+      where: { id: payload.sub },
     });
+
     if (!user) {
-      return null;
+      console.log('[JwtStrategy] User not found for ID:', payload.sub);
+      throw new UnauthorizedException('Token inválido: usuário não encontrado');
     }
+
+    console.log('[JwtStrategy] User validated successfully:', user.id);
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

@@ -76,7 +76,7 @@ export class DesafiosService {
     });
 
     // Cria o registro de desafio concluído e adiciona pontos em uma transação
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: any) => {
       // Cria o registro
       const desafioConcluido = await tx.desafiosConcluidos.create({
         data: createDesafioConcluidoDto,

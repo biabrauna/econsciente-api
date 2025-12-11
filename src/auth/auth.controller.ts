@@ -96,8 +96,19 @@ export class AuthController {
     schema: {
       properties: {
         access_token: { type: 'string' },
-        userId: { type: 'string' },
-        name: { type: 'string' },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            email: { type: 'string' },
+            dataNascimento: { type: 'string' },
+            biografia: { type: 'string' },
+            pontos: { type: 'number' },
+            seguidores: { type: 'number' },
+            seguindo: { type: 'number' },
+          },
+        },
       },
     },
   })
