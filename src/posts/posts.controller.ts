@@ -55,10 +55,22 @@ export class PostsController {
   @Patch(':postId/unlike')
   @ApiOperation({ summary: 'Descurtir um post' })
   @ApiParam({ name: 'postId', description: 'ID do post' })
+  @ApiBody({ type: LikePostDto })
   @ApiResponse({ status: 200, description: 'Like removido com sucesso' })
   @ApiResponse({ status: 404, description: 'Post não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  unlikePost(@Param('postId') postId: string) {
-    return this.postsService.unlikePost(postId);
+  unlikePost(@Param('postId') postId: string, @Body() likePostDto: LikePostDto) {
+    return this.postsService.unlikePost(postId, likePostDto.userId);
+  }
+
+  @Get('feed/:userId')
+  @ApiOperation({ summary: 'Buscar feed de posts (posts de quem o usuário segue + próprios)' })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Número da página' })
+  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Itens por página' })
+  @ApiResponse({ status: 200, description: 'Feed de posts' })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  getFeed(@Param('userId') userId: string, @Query() paginationDto: PaginationDto) {
+    return this.postsService.getFeed(userId, paginationDto);
   }
 }

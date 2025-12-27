@@ -6,6 +6,7 @@ import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class DesafiosService {
@@ -17,6 +18,8 @@ export class DesafiosService {
     private notificacoesService: NotificacoesService,
     @Inject(forwardRef(() => OnboardingService))
     private onboardingService: OnboardingService,
+    @Inject(forwardRef(() => UsersService))
+    private usersService: UsersService,
   ) {}
 
   async create(createDesafioDto: CreateDesafioDto) {
@@ -156,6 +159,14 @@ export class DesafiosService {
         createDesafioConcluidoDto.userId
       ).catch(err => {
         this.logger.error(`Erro ao verificar onboarding: ${err.message}`);
+      });
+
+      // Atualizar XP e nível (async)
+      this.usersService.updateUserXpAndLevel(
+        createDesafioConcluidoDto.userId,
+        desafio.valor
+      ).catch(err => {
+        this.logger.error(`Erro ao atualizar XP: ${err.message}`);
       });
     }
 

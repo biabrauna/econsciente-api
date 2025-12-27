@@ -165,4 +165,38 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
+
+  @Get(':userId/posts')
+  @ApiOperation({ summary: 'Buscar posts de um usuário específico' })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Número da página' })
+  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Itens por página' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de posts do usuário' })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  getUserPosts(@Param('userId') userId: string, @Query() paginationDto: PaginationDto) {
+    return this.usersService.getUserPosts(userId, paginationDto);
+  }
+
+  @Get(':userId/desafios')
+  @ApiOperation({ summary: 'Buscar desafios concluídos por um usuário' })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Número da página' })
+  @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Itens por página' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de desafios concluídos' })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  getUserDesafios(@Param('userId') userId: string, @Query() paginationDto: PaginationDto) {
+    return this.usersService.getUserDesafios(userId, paginationDto);
+  }
+
+  @Get('ranking/list')
+  @ApiOperation({ summary: 'Buscar ranking de usuários ordenados por pontos' })
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Número da página' })
+  @ApiQuery({ name: 'limit', required: false, example: 100, description: 'Itens por página' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de usuários ordenados por pontos' })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  getRanking(@Query() paginationDto: PaginationDto) {
+    return this.usersService.getRanking(paginationDto);
+  }
 }

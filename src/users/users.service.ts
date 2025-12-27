@@ -5,6 +5,7 @@ import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
+import { NivelHelper } from './helpers/nivel.helper';
 
 @Injectable()
 export class UsersService {
@@ -175,6 +176,12 @@ export class UsersService {
           .catch(err => {
             this.logger.error(`Erro ao verificar onboarding: ${err.message}`);
           });
+
+        // Atualizar XP e nível (async)
+        this.updateUserXpAndLevel(id, 5)
+          .catch(err => {
+            this.logger.error(`Erro ao atualizar XP: ${err.message}`);
+          });
       }
 
       return result;
@@ -191,6 +198,203 @@ export class UsersService {
       return { message: 'Usuário deletado com sucesso' };
     } catch {
       throw new NotFoundException('Usuário não encontrado');
+    }
+  }
+
+  async getUserPosts(userId: string, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    // Verifica se o usuário existe
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.posts.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+          comentarios: {
+            select: {
+              id: true,
+              userId: true,
+              userName: true,
+              texto: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.posts.count({ where: { userId } }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  async getUserDesafios(userId: string, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    // Verifica se o usuário existe
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.desafiosConcluidos.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        include: {
+          desafio: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.desafiosConcluidos.count({ where: { userId } }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  async getRanking(paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 100 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          pontos: true,
+          nivel: true,
+          xp: true,
+          seguidores: true,
+          seguindo: true,
+          biografia: true,
+          createdAt: true,
+        },
+        orderBy: {
+          pontos: 'desc',
+        },
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  async updateUserXpAndLevel(userId: string, pontosGanhos: number): Promise<void> {
+    // Buscar dados atuais do usuário
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { xp: true, nivel: true, pontos: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    // Converter pontos em XP (1 ponto = 10 XP)
+    const xpGanho = pontosGanhos * 10;
+
+    // Calcular novo nível e XP
+    const { novoXp, novoNivel, subiuNivel } = NivelHelper.adicionarXp(
+      user.xp,
+      user.nivel,
+      xpGanho,
+    );
+
+    // Atualizar usuário
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        xp: novoXp,
+        nivel: novoNivel,
+      },
+    });
+
+    // Se subiu de nível, notificar
+    if (subiuNivel) {
+      const titulo = NivelHelper.getTitulo(novoNivel);
+      await this.notificacoesService.create({
+        userId,
+        tipo: 'level_up',
+        titulo: `Parabéns! Você subiu para o nível ${novoNivel}!`,
+        mensagem: `Você alcançou o nível ${novoNivel} e ganhou o título: ${titulo}`,
+      });
+
+      this.logger.log(`Usuário ${userId} subiu para o nível ${novoNivel}`);
     }
   }
 }

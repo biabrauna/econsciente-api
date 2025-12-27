@@ -40,8 +40,8 @@ export class AuthController {
         value: {
           name: 'João Silva',
           email: 'joao@email.com',
-          password: 'minhasenha123',
-          confirmPassword: 'minhasenha123',
+          password: '********',
+          confirmPassword: '********',
           age: '25',
           biografia: 'Desenvolvedor apaixonado por sustentabilidade',
         },

@@ -64,11 +64,24 @@ model Posts {
   url         String
   likes       Int         @default(0)
   comentarios Comentario[]
+  userLikes   UserLike[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model UserLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  postId    String   @db.ObjectId
+  post      Posts    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
 }
 
 model Comentario {

@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class PostsService {
@@ -13,6 +14,8 @@ export class PostsService {
     private prisma: PrismaService,
     private conquistasService: ConquistasService,
     private notificacoesService: NotificacoesService,
+    @Inject(forwardRef(() => UsersService))
+    private usersService: UsersService,
   ) {}
 
   async create(createPostDto: CreatePostDto) {
@@ -73,6 +76,12 @@ export class PostsService {
         this.logger.error(`Erro ao verificar conquistas de pontos: ${err.message}`);
       });
 
+    // Atualizar XP e nível (async)
+    this.usersService.updateUserXpAndLevel(createPostDto.userId, 3)
+      .catch(err => {
+        this.logger.error(`Erro ao atualizar XP: ${err.message}`);
+      });
+
     return result;
   }
 
@@ -116,26 +125,54 @@ export class PostsService {
   }
 
   async likePost(postId: string, userId: string) {
-    const post = await this.prisma.posts.update({
-      where: { id: postId },
-      data: {
-        likes: {
-          increment: 1,
+    // Verificar se o usuário já curtiu o post
+    const existingLike = await this.prisma.userLike.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
         },
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    });
+
+    if (existingLike) {
+      throw new Error('Você já curtiu este post');
+    }
+
+    // Criar o like e incrementar contador em uma transação
+    const result = await this.prisma.$transaction(async (tx: any) => {
+      // Criar registro de like
+      await tx.userLike.create({
+        data: {
+          userId,
+          postId,
+        },
+      });
+
+      // Incrementar contador de likes
+      const post = await tx.posts.update({
+        where: { id: postId },
+        data: {
+          likes: {
+            increment: 1,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
         }
-      }
+      });
+
+      return post;
     });
 
     // Notificar dono do post (async)
-    if (post.userId !== userId) {
+    if (result.userId !== userId) {
       // Buscar nome do usuário que curtiu
       const liker = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -143,41 +180,141 @@ export class PostsService {
       });
 
       if (liker) {
-        this.notificacoesService.notifyLike(post.userId, liker.name, postId, userId)
+        this.notificacoesService.notifyLike(result.userId, liker.name, postId, userId)
           .catch(err => {
             this.logger.error(`Erro ao notificar like: ${err.message}`);
           });
       }
     }
 
-    return post;
+    return result;
   }
 
-  async unlikePost(postId: string) {
-    const post = await this.prisma.posts.findUnique({
-      where: { id: postId },
-    });
-
-    if (!post) {
-      throw new Error('Post não encontrado');
-    }
-
-    return this.prisma.posts.update({
-      where: { id: postId },
-      data: {
-        likes: {
-          decrement: post.likes > 0 ? 1 : 0,
+  async unlikePost(postId: string, userId: string) {
+    // Verificar se o like existe
+    const existingLike = await this.prisma.userLike.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
         },
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    });
+
+    if (!existingLike) {
+      throw new Error('Você não curtiu este post');
+    }
+
+    // Deletar o like e decrementar contador em uma transação
+    return this.prisma.$transaction(async (tx: any) => {
+      // Deletar registro de like
+      await tx.userLike.delete({
+        where: {
+          userId_postId: {
+            userId,
+            postId,
+          },
+        },
+      });
+
+      // Decrementar contador de likes
+      const post = await tx.posts.update({
+        where: { id: postId },
+        data: {
+          likes: {
+            decrement: 1,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
         }
-      }
+      });
+
+      return post;
     });
+  }
+
+  async getFeed(userId: string, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    // Buscar IDs dos usuários que o usuário atual segue
+    const following = await this.prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
+
+    const followingIds = following.map(f => f.followingId);
+
+    // Se não segue ninguém, retornar posts próprios
+    if (followingIds.length === 0) {
+      followingIds.push(userId);
+    } else {
+      // Incluir posts próprios também
+      followingIds.push(userId);
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.posts.findMany({
+        where: {
+          userId: {
+            in: followingIds,
+          },
+        },
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          },
+          comentarios: {
+            select: {
+              id: true,
+              userId: true,
+              userName: true,
+              texto: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.posts.count({
+        where: {
+          userId: {
+            in: followingIds,
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
   }
 }
