@@ -6,6 +6,7 @@ import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
 import { NivelHelper } from './helpers/nivel.helper';
+import { PostsService } from 'src/posts/posts.service';
 
 @Injectable()
 export class UsersService {

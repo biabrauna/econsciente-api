@@ -18,6 +18,22 @@ export class ChallengeVerificationDto {
   @IsNotEmpty({ message: 'Descrição do desafio é obrigatória' })
   challengeDescription: string;
 
+  @ApiProperty({
+    description: 'ID do desafio a ser concluído',
+    example: '507f1f77bcf86cd799439011'
+  })
+  @IsString({ message: 'ID do desafio deve ser uma string' })
+  @IsNotEmpty({ message: 'ID do desafio é obrigatório' })
+  challengeId: string;
+
+  @ApiProperty({
+    description: 'ID do usuário que está completando o desafio',
+    example: '507f1f77bcf86cd799439012'
+  })
+  @IsString({ message: 'ID do usuário deve ser uma string' })
+  @IsNotEmpty({ message: 'ID do usuário é obrigatório' })
+  userId: string;
+
   @ApiPropertyOptional({
     description: 'Se true, usa simulação ao invés das APIs reais',
     default: false
@@ -31,7 +47,7 @@ export class ChallengeVerificationResponse {
   @ApiProperty({ description: 'Se a análise foi bem-sucedida' })
   success: boolean;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Nível de confiança da análise (0.0 a 1.0)',
     minimum: 0,
     maximum: 1,
@@ -39,13 +55,13 @@ export class ChallengeVerificationResponse {
   })
   confidence: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Análise detalhada da imagem',
     example: 'A imagem mostra 12 tampinhas de garrafas PET coletadas...'
   })
   analysis: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Provedor de IA utilizado',
     example: 'Claude (Anthropic)'
   })
@@ -56,4 +72,10 @@ export class ChallengeVerificationResponse {
 
   @ApiPropertyOptional({ description: 'Mensagem de erro, se houver' })
   error?: string;
+
+  @ApiPropertyOptional({ description: 'ID do desafio concluído, se aplicável' })
+  challengeCompletedId?: string;
+
+  @ApiPropertyOptional({ description: 'Pontos adicionados ao usuário' })
+  pointsAwarded?: number;
 }

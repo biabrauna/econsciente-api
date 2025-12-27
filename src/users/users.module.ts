@@ -6,6 +6,7 @@ import { AuthModule } from '../auth/auth.module';
 import { ConquistasModule } from '../conquistas/conquistas.module';
 import { NotificacoesModule } from '../notificacoes/notificacoes.module';
 import { OnboardingModule } from '../onboarding/onboarding.module';
+import { PostsModule } from 'src/posts/posts.module';
 
 @Module({
   imports: [
@@ -16,5 +17,6 @@ import { OnboardingModule } from '../onboarding/onboarding.module';
   ],
   controllers: [UsersController],
   providers: [UsersService, PrismaService],
+  exports: [UsersService],
 })
 export class UsersModule {}

@@ -42,7 +42,7 @@ describe('AuthController (e2e)', () => {
         email: 'joao@test.com',
         password: 'password123',
         confirmPassword: 'password123',
-        age: '25',
+        dataNascimento: '1998-01-01',
         biografia: 'Test user',
       };
 
@@ -64,7 +64,7 @@ describe('AuthController (e2e)', () => {
         email: 'invalid-email',
         password: 'pass',
         confirmPassword: 'different',
-        age: '25',
+        dataNascimento: '1998-01-01',
       };
 
       return request(app.getHttpServer())
@@ -79,7 +79,7 @@ describe('AuthController (e2e)', () => {
         email: 'joao@test.com',
         password: 'password123',
         confirmPassword: 'password123',
-        age: '25',
+        dataNascimento: '1998-01-01',
         biografia: 'Test user',
       };
 
@@ -100,7 +100,7 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  describe('/auth/user (POST)', () => {
+  describe('/auth/login (POST)', () => {
     beforeEach(async () => {
       // Create a test user
       const registerDto = {
@@ -108,7 +108,7 @@ describe('AuthController (e2e)', () => {
         email: 'joao@test.com',
         password: 'password123',
         confirmPassword: 'password123',
-        age: '25',
+        dataNascimento: '1998-01-01',
         biografia: 'Test user',
       };
 
@@ -117,7 +117,75 @@ describe('AuthController (e2e)', () => {
         .send(registerDto);
     });
 
-    it('should login user successfully', () => {
+    it('should login user successfully and return complete user object', () => {
+      const loginDto = {
+        email: 'joao@test.com',
+        password: 'password123',
+      };
+
+      return request(app.getHttpServer())
+        .post('/auth/login')
+        .send(loginDto)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toHaveProperty('access_token');
+          expect(typeof res.body.access_token).toBe('string');
+          expect(res.body.access_token.length).toBeGreaterThan(0);
+          expect(res.body).toHaveProperty('user');
+          expect(res.body.user).toHaveProperty('id');
+          expect(res.body.user).toHaveProperty('name', 'João Silva');
+          expect(res.body.user).toHaveProperty('email', 'joao@test.com');
+          expect(res.body.user).toHaveProperty('pontos', 0);
+          expect(res.body.user).toHaveProperty('nivel', 1);
+          expect(res.body.user).toHaveProperty('seguidores', 0);
+          expect(res.body.user).toHaveProperty('seguindo', 0);
+          expect(res.body.user).not.toHaveProperty('password');
+        });
+    });
+
+    it('should return 404 for non-existent user', () => {
+      const loginDto = {
+        email: 'nonexistent@test.com',
+        password: 'password123',
+      };
+
+      return request(app.getHttpServer())
+        .post('/auth/login')
+        .send(loginDto)
+        .expect(404);
+    });
+
+    it('should return 401 for invalid password', () => {
+      const loginDto = {
+        email: 'joao@test.com',
+        password: 'wrongpassword',
+      };
+
+      return request(app.getHttpServer())
+        .post('/auth/login')
+        .send(loginDto)
+        .expect(401);
+    });
+  });
+
+  describe('/auth/user (POST)', () => {
+    beforeEach(async () => {
+      // Create a test user
+      const registerDto = {
+        name: 'João Silva',
+        email: 'joao@test.com',
+        password: 'password123',
+        confirmPassword: 'password123',
+        dataNascimento: '1998-01-01',
+        biografia: 'Test user',
+      };
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(registerDto);
+    });
+
+    it('should login user successfully (deprecated endpoint)', () => {
       const loginDto = {
         email: 'joao@test.com',
         password: 'password123',
@@ -129,8 +197,11 @@ describe('AuthController (e2e)', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('access_token');
-          expect(res.body).toHaveProperty('userId');
-          expect(res.body).toHaveProperty('name', 'João Silva');
+          expect(res.body).toHaveProperty('user');
+          expect(res.body.user).toHaveProperty('id');
+          expect(res.body.user).toHaveProperty('name', 'João Silva');
+          expect(res.body.user).toHaveProperty('email', 'joao@test.com');
+          expect(res.body.user).not.toHaveProperty('password');
         });
     });
 
@@ -169,7 +240,7 @@ describe('AuthController (e2e)', () => {
         email: 'joao@test.com',
         password: 'password123',
         confirmPassword: 'password123',
-        age: '25',
+        dataNascimento: '1998-01-01',
         biografia: 'Test user',
       };
 
@@ -178,7 +249,7 @@ describe('AuthController (e2e)', () => {
         .send(registerDto);
 
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/user')
+        .post('/auth/login')
         .send({
           email: 'joao@test.com',
           password: 'password123',
