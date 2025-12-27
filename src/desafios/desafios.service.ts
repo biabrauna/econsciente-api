@@ -90,6 +90,9 @@ export class DesafiosService {
               id: true,
               name: true,
               email: true,
+              pontos: true,
+              nivel: true,
+              xp: true,
             }
           }
         }
@@ -97,14 +100,24 @@ export class DesafiosService {
 
       // Adiciona pontos ao usuário
       if (desafio && desafio.valor > 0) {
-        await tx.user.update({
+        const userUpdated = await tx.user.update({
           where: { id: createDesafioConcluidoDto.userId },
           data: {
             pontos: {
               increment: desafio.valor,
             },
           },
+          select: {
+            pontos: true,
+            nivel: true,
+            xp: true,
+          },
         });
+
+        // Atualiza os dados do usuário no objeto retornado
+        desafioConcluido.user.pontos = userUpdated.pontos;
+        desafioConcluido.user.nivel = userUpdated.nivel;
+        desafioConcluido.user.xp = userUpdated.xp;
       }
 
       return desafioConcluido;

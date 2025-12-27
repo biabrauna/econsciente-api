@@ -164,7 +164,12 @@ export class PostsService {
               name: true,
               email: true,
             }
-          }
+          },
+          userLikes: {
+            select: {
+              userId: true,
+            },
+          },
         }
       });
 
@@ -232,7 +237,12 @@ export class PostsService {
               name: true,
               email: true,
             }
-          }
+          },
+          userLikes: {
+            select: {
+              userId: true,
+            },
+          },
         }
       });
 
@@ -287,6 +297,11 @@ export class PostsService {
             },
             orderBy: {
               createdAt: 'desc',
+            },
+          },
+          userLikes: {
+            select: {
+              userId: true,
             },
           },
         },

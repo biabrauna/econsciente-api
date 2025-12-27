@@ -45,6 +45,8 @@ export class UsersService {
           dataNascimento: true,
           biografia: true,
           pontos: true,
+          nivel: true,
+          xp: true,
           seguidores: true,
           seguindo: true,
           createdAt: true,
@@ -85,6 +87,8 @@ export class UsersService {
         dataNascimento: true,
         biografia: true,
         pontos: true,
+        nivel: true,
+        xp: true,
         seguidores: true,
         seguindo: true
       }
@@ -125,6 +129,8 @@ export class UsersService {
             dataNascimento: true,
             biografia: true,
             pontos: true,
+            nivel: true,
+            xp: true,
             seguidores: true,
             seguindo: true
           }
@@ -132,15 +138,18 @@ export class UsersService {
 
         // Adiciona 5 pontos pela primeira biografia
         if (hadNoBio && hasNewBio) {
-          await tx.user.update({
+          const userUpdated = await tx.user.update({
             where: { id },
             data: {
               pontos: {
                 increment: 5,
               },
             },
+            select: {
+              pontos: true,
+            },
           });
-          updated.pontos += 5; // Atualiza o objeto retornado
+          updated.pontos = userUpdated.pontos; // Atualiza o objeto retornado
         }
 
         return updated;
@@ -355,7 +364,7 @@ export class UsersService {
     };
   }
 
-  async updateUserXpAndLevel(userId: string, pontosGanhos: number): Promise<void> {
+  async updateUserXpAndLevel(userId: string, pontosGanhos: number): Promise<{ xp: number; nivel: number; subiuNivel: boolean }> {
     // Buscar dados atuais do usuário
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -397,5 +406,7 @@ export class UsersService {
 
       this.logger.log(`Usuário ${userId} subiu para o nível ${novoNivel}`);
     }
+
+    return { xp: novoXp, nivel: novoNivel, subiuNivel };
   }
 }
