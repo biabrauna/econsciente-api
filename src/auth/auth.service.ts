@@ -26,12 +26,8 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { name, email, password, confirmPassword, dataNascimento, biografia } =
+    const { name, email, password, dataNascimento, biografia } =
       registerDto;
-
-    if (password !== confirmPassword) {
-      throw new BadRequestException('As senhas devem ser iguais');
-    }
 
     // Check if user exists
     const userExists = await this.prisma.user.findUnique({ where: { email } });
