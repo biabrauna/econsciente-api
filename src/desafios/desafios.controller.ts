@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, UseGuards, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards, Param, Request } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -82,5 +82,18 @@ export class DesafiosController {
   @ApiResponse({ status: 401, description: 'Token inválido' })
   findOne(@Param('id') id: string) {
     return this.desafiosService.findOne(id);
+  }
+
+  @Post(':id/completar')
+  @ApiOperation({ summary: 'Completar desafio' })
+  @ApiParam({ name: 'id', description: 'ID do desafio' })
+  @ApiResponse({ status: 201, description: 'Desafio completado com sucesso' })
+  @ApiResponse({ status: 404, description: 'Desafio não encontrado' })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  completar(@Param('id') id: string, @Request() req: any) {
+    return this.desafiosService.createDesafioConcluido({
+      desafioId: id,
+      userId: req.user.id,
+    });
   }
 }
