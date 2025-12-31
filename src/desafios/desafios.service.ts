@@ -24,7 +24,11 @@ export class DesafiosService {
 
   async create(createDesafioDto: CreateDesafioDto) {
     return this.prisma.desafios.create({
-      data: createDesafioDto,
+      data: {
+        ...createDesafioDto,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
   }
 
@@ -98,14 +102,34 @@ export class DesafiosService {
         }
       });
 
-      // Adiciona pontos ao usuário
+      // Adiciona pontos ao usuário e atualiza XP/nível
+      let subiuNivel = false;
       if (desafio && desafio.valor > 0) {
+        // Buscar dados atuais do usuário
+        const currentUser = await tx.user.findUnique({
+          where: { id: createDesafioConcluidoDto.userId },
+          select: { xp: true, nivel: true },
+        });
+
+        // Converter pontos em XP (1 ponto = 10 XP)
+        const xpGanho = Number(desafio.valor) * 10;
+        const { NivelHelper } = await import('../users/helpers/nivel.helper');
+        const { novoXp, novoNivel, subiuNivel: subiu } = NivelHelper.adicionarXp(
+          Number(currentUser.xp),
+          Number(currentUser.nivel),
+          xpGanho,
+        );
+
+        subiuNivel = subiu;
+
         const userUpdated = await tx.user.update({
           where: { id: createDesafioConcluidoDto.userId },
           data: {
             pontos: {
               increment: desafio.valor,
             },
+            xp: novoXp,
+            nivel: novoNivel,
           },
           select: {
             pontos: true,
@@ -120,7 +144,7 @@ export class DesafiosService {
         desafioConcluido.user.xp = userUpdated.xp;
       }
 
-      return desafioConcluido;
+      return { desafioConcluido, subiuNivel };
     });
 
     // Verifica conquistas relacionadas a desafios (async, não bloqueia resposta)
@@ -174,16 +198,21 @@ export class DesafiosService {
         this.logger.error(`Erro ao verificar onboarding: ${err.message}`);
       });
 
-      // Atualizar XP e nível (async)
-      this.usersService.updateUserXpAndLevel(
-        createDesafioConcluidoDto.userId,
-        desafio.valor
-      ).catch(err => {
-        this.logger.error(`Erro ao atualizar XP: ${err.message}`);
-      });
+      // Verificar se subiu de nível para notificar
+      if (result.subiuNivel) {
+        const { NivelHelper } = await import('../users/helpers/nivel.helper');
+        const titulo = NivelHelper.getTitulo(Number(result.desafioConcluido.user.nivel));
+        await this.notificacoesService.create({
+          userId: createDesafioConcluidoDto.userId,
+          tipo: 'level_up',
+          titulo: `Parabéns! Você subiu para o nível ${result.desafioConcluido.user.nivel}!`,
+          mensagem: `Você alcançou o nível ${result.desafioConcluido.user.nivel} e ganhou o título: ${titulo}`,
+        });
+        this.logger.log(`Usuário ${createDesafioConcluidoDto.userId} subiu para o nível ${result.desafioConcluido.user.nivel}`);
+      }
     }
 
-    return result;
+    return result.desafioConcluido;
   }
 
   async searchDesafio(search: string) {

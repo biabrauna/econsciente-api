@@ -1,20 +1,25 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsUrl } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsUrl, IsOptional } from 'class-validator';
 
 export class CreateProfilePicDto {
   @IsString()
-  @ApiProperty()
-  @IsNotEmpty({ message: 'O ID do usuário é obrigatório' })
-  userId: string;
+  @IsOptional()
+  userId?: string;
 
   @IsString()
-  @ApiProperty()
-  @IsNotEmpty({ message: 'O nome é obrigatório' })
-  name: string;
+  @ApiPropertyOptional({ description: 'Nome do arquivo (opcional)' })
+  @IsOptional()
+  name?: string;
 
   @IsString()
   @IsUrl({}, { message: 'A URL fornecida é inválida' })
-  @ApiProperty()
+  @ApiProperty({ description: 'URL da foto de perfil no Cloudinary' })
   @IsNotEmpty({ message: 'A URL é obrigatória' })
   url: string;
+}
+
+export class CreateProfilePicWithUserDto extends CreateProfilePicDto {
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
 }

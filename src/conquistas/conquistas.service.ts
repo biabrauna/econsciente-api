@@ -44,7 +44,11 @@ export class ConquistasService {
     }
 
     return this.prisma.conquista.create({
-      data: createConquistaDto,
+      data: {
+        ...createConquistaDto,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     });
   }
 
@@ -121,7 +125,7 @@ export class ConquistasService {
     }
 
     // Desbloqueia e adiciona pontos ao usuário em uma transação
-    await this.prisma.$transaction(async (tx: any) => {
+    const transactionResult = await this.prisma.$transaction(async (tx: any) => {
       // Cria o registro de conquista desbloqueada
       await tx.conquistaUsuario.create({
         data: {
@@ -130,18 +134,64 @@ export class ConquistasService {
         },
       });
 
-      // Adiciona os pontos de recompensa
+      // Adiciona os pontos de recompensa e atualiza XP/nível
+      let subiuNivel = false;
       if (conquista.pontosRecompensa > 0) {
+        // Buscar dados atuais do usuário
+        const currentUser = await tx.user.findUnique({
+          where: { id: userId },
+          select: { xp: true, nivel: true },
+        });
+
+        // Converter pontos em XP (1 ponto = 10 XP)
+        const xpGanho = Number(conquista.pontosRecompensa) * 10;
+        const { NivelHelper } = await import('../users/helpers/nivel.helper');
+        const { novoXp, novoNivel, subiuNivel: subiu } = NivelHelper.adicionarXp(
+          Number(currentUser.xp),
+          Number(currentUser.nivel),
+          xpGanho,
+        );
+
+        subiuNivel = subiu;
+
         await tx.user.update({
           where: { id: userId },
           data: {
             pontos: {
-              increment: conquista.pontosRecompensa,
+              increment: Number(conquista.pontosRecompensa),
             },
+            xp: novoXp,
+            nivel: novoNivel,
           },
         });
       }
+
+      return { subiuNivel };
     });
+
+    // Notificar se subiu de nível
+    if (transactionResult.subiuNivel) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { nivel: true },
+      });
+
+      if (user) {
+        const { NivelHelper } = await import('../users/helpers/nivel.helper');
+        const titulo = NivelHelper.getTitulo(Number(user.nivel));
+        const { NotificacoesService } = await import('../notificacoes/notificacoes.service');
+        const notificacoesService = new NotificacoesService(this.prisma);
+
+        await notificacoesService.create({
+          userId,
+          tipo: 'level_up',
+          titulo: `Parabéns! Você subiu para o nível ${user.nivel}!`,
+          mensagem: `Você alcançou o nível ${user.nivel} e ganhou o título: ${titulo}`,
+        });
+
+        this.logger.log(`Usuário ${userId} subiu para o nível ${user.nivel}`);
+      }
+    }
 
     this.logger.log(`Conquista "${conquista.nome}" desbloqueada para usuário ${userId}`);
     return true; // Desbloqueou agora

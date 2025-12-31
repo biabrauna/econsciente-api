@@ -28,6 +28,8 @@ export class SessionsService {
         userAgent,
         expiresAt,
         lastActivity: new Date(),
+        createdAt: new Date(),
+        isActive: true,
       },
     });
 

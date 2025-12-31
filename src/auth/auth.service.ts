@@ -64,6 +64,14 @@ export class AuthService {
           password: passwordHash,
           dataNascimento: new Date(dataNascimento),
           biografia: biografia || '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          nivel: BigInt(1),
+          onboardingCompleted: false,
+          pontos: BigInt(0),
+          seguidores: BigInt(0),
+          seguindo: BigInt(0),
+          xp: BigInt(0),
         },
       });
       const { password: _, ...userWithoutPassword } = user;

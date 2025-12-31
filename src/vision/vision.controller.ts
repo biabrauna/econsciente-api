@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PythonVisionService } from './python-vision.service';
+import { ImageValidatorService } from './image-validator.service';
 import {
   ChallengeVerificationDto,
   ChallengeVerificationResponse,
@@ -33,6 +34,7 @@ export class VisionController {
 
   constructor(
     private readonly pythonVisionService: PythonVisionService,
+    private readonly imageValidatorService: ImageValidatorService,
     private readonly desafiosService: DesafiosService,
   ) {}
 
@@ -60,6 +62,24 @@ export class VisionController {
   async verifyChallengeCompletion(
     @Body() challengeData: ChallengeVerificationDto,
   ): Promise<ChallengeVerificationResponse> {
+    // Valida se a URL da imagem é acessível antes de processar
+    const validationResult = await this.imageValidatorService.validateImageUrl(
+      challengeData.imageUrl,
+    );
+
+    if (!validationResult.isValid) {
+      this.logger.error(
+        `❌ Imagem inválida ou inacessível: ${validationResult.error}`,
+      );
+      throw new HttpException(
+        {
+          message: 'Imagem inválida ou inacessível',
+          error: validationResult.error,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     let visionResult;
     let usedFallback = false;
 
@@ -102,7 +122,7 @@ export class VisionController {
           });
 
         challengeCompletedId = desafioConcluido.id;
-        pointsAwarded = desafio.valor;
+        pointsAwarded = Number(desafio.valor);
 
         this.logger.log(
           `✅ Desafio concluído: userId=${challengeData.userId}, challengeId=${challengeData.challengeId}, pontos=${desafio.valor}`,

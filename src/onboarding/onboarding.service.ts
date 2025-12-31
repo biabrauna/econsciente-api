@@ -57,7 +57,7 @@ export class OnboardingService {
     return {
       completed: user.onboardingCompleted,
       steps,
-      totalPoints: user.pontos,
+      totalPoints: Number(user.pontos),
     };
   }
 
@@ -105,6 +105,27 @@ export class OnboardingService {
     const allCompleted = steps.profilePic && steps.bio && steps.firstChallenge;
     const completionBonus = allCompleted ? this.POINTS.completion : 0;
 
+    // Buscar dados atuais do usuário para calcular XP/nível
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { xp: true, nivel: true },
+    });
+
+    if (!currentUser) {
+      this.logger.error(`Usuário ${userId} não encontrado ao completar etapa`);
+      return this.getStatus(userId);
+    }
+
+    // Converter pontos em XP (1 ponto = 10 XP)
+    const totalPontos = pointsToAdd + completionBonus;
+    const xpGanho = totalPontos * 10;
+    const { NivelHelper } = await import('../users/helpers/nivel.helper');
+    const { novoXp, novoNivel } = NivelHelper.adicionarXp(
+      Number(currentUser.xp),
+      Number(currentUser.nivel),
+      xpGanho,
+    );
+
     // Atualiza no banco
     await this.prisma.user.update({
       where: { id: userId },
@@ -112,8 +133,10 @@ export class OnboardingService {
         onboardingSteps: JSON.stringify(steps),
         onboardingCompleted: allCompleted,
         pontos: {
-          increment: pointsToAdd + completionBonus,
+          increment: totalPontos,
         },
+        xp: novoXp,
+        nivel: novoNivel,
       },
     });
 

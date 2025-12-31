@@ -183,23 +183,25 @@ export class FollowService {
     try {
       const followers = await this.prisma.follow.findMany({
         where: { followingId: userId },
-        include: {
-          follower: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              pontos: true,
-              biografia: true,
-            },
-          },
-        },
         orderBy: {
           createdAt: 'desc',
         },
       });
 
-      return followers.map((f: any) => f.follower);
+      // Buscar dados dos usuários separadamente
+      const followerIds = followers.map(f => f.followerId);
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: followerIds } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          pontos: true,
+          biografia: true,
+        },
+      });
+
+      return users;
     } catch (error) {
       this.logger.error(`Erro ao buscar seguidores: ${error.message}`);
       return [];
@@ -213,23 +215,25 @@ export class FollowService {
     try {
       const following = await this.prisma.follow.findMany({
         where: { followerId: userId },
-        include: {
-          following: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              pontos: true,
-              biografia: true,
-            },
-          },
-        },
         orderBy: {
           createdAt: 'desc',
         },
       });
 
-      return following.map((f: any) => f.following);
+      // Buscar dados dos usuários separadamente
+      const followingIds = following.map(f => f.followingId);
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: followingIds } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          pontos: true,
+          biografia: true,
+        },
+      });
+
+      return users;
     } catch (error) {
       this.logger.error(`Erro ao buscar seguindo: ${error.message}`);
       return [];

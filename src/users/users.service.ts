@@ -136,20 +136,44 @@ export class UsersService {
           }
         });
 
-        // Adiciona 5 pontos pela primeira biografia
+        // Adiciona 5 pontos pela primeira biografia e atualiza XP/nível
         if (hadNoBio && hasNewBio) {
+          // Buscar dados atuais para calcular XP/nível
+          const currentUser = await tx.user.findUnique({
+            where: { id },
+            select: { xp: true, nivel: true },
+          });
+
+          const pontosGanhos = 5;
+          const xpGanho = pontosGanhos * 10;
+          const { novoXp, novoNivel, subiuNivel } = NivelHelper.adicionarXp(
+            Number(currentUser.xp),
+            Number(currentUser.nivel),
+            xpGanho,
+          );
+
           const userUpdated = await tx.user.update({
             where: { id },
             data: {
               pontos: {
-                increment: 5,
+                increment: pontosGanhos,
               },
+              xp: novoXp,
+              nivel: novoNivel,
             },
             select: {
               pontos: true,
+              nivel: true,
+              xp: true,
             },
           });
-          updated.pontos = userUpdated.pontos; // Atualiza o objeto retornado
+          updated.pontos = userUpdated.pontos;
+          updated.nivel = userUpdated.nivel;
+          updated.xp = userUpdated.xp;
+
+          // Retornar também se subiu de nível
+          (updated as any).subiuNivel = subiuNivel;
+          (updated as any).nivelAnterior = currentUser.nivel;
         }
 
         return updated;
@@ -187,11 +211,17 @@ export class UsersService {
             this.logger.error(`Erro ao verificar onboarding: ${err.message}`);
           });
 
-        // Atualizar XP e nível (async)
-        this.updateUserXpAndLevel(id, 5)
-          .catch(err => {
-            this.logger.error(`Erro ao atualizar XP: ${err.message}`);
+        // Notificar se subiu de nível
+        if ((result as any).subiuNivel) {
+          const titulo = NivelHelper.getTitulo(result.nivel);
+          await this.notificacoesService.create({
+            userId: id,
+            tipo: 'level_up',
+            titulo: `Parabéns! Você subiu para o nível ${result.nivel}!`,
+            mensagem: `Você alcançou o nível ${result.nivel} e ganhou o título: ${titulo}`,
           });
+          this.logger.log(`Usuário ${id} subiu para o nível ${result.nivel}`);
+        }
       }
 
       return result;
@@ -229,27 +259,6 @@ export class UsersService {
         where: { userId },
         skip,
         take: limit,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          },
-          comentarios: {
-            select: {
-              id: true,
-              userId: true,
-              userName: true,
-              texto: true,
-              createdAt: true,
-            },
-            orderBy: {
-              createdAt: 'desc',
-            },
-          },
-        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -290,18 +299,8 @@ export class UsersService {
         where: { userId },
         skip,
         take: limit,
-        include: {
-          desafio: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          }
-        },
         orderBy: {
-          createdAt: 'desc',
+          completedAt: 'desc',
         },
       }),
       this.prisma.desafiosConcluidos.count({ where: { userId } }),
@@ -380,8 +379,8 @@ export class UsersService {
 
     // Calcular novo nível e XP
     const { novoXp, novoNivel, subiuNivel } = NivelHelper.adicionarXp(
-      user.xp,
-      user.nivel,
+      Number(user.xp),
+      Number(user.nivel),
       xpGanho,
     );
 

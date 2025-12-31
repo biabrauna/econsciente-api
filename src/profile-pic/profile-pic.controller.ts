@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -26,8 +26,11 @@ export class ProfilePicController {
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  create(@Body() createProfilePicDto: CreateProfilePicDto) {
-    return this.profilePicService.create(createProfilePicDto);
+  create(@Body() createProfilePicDto: CreateProfilePicDto, @Request() req: any) {
+    return this.profilePicService.create({
+      ...createProfilePicDto,
+      userId: req.user.id,
+    });
   }
 
   @Get()

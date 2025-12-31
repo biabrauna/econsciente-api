@@ -38,17 +38,35 @@ export class PostsService {
         }
       });
 
-      // Adiciona 3 pontos por criar post
+      // Buscar dados atuais do usuário para calcular XP/nível
+      const currentUser = await tx.user.findUnique({
+        where: { id: createPostDto.userId },
+        select: { xp: true, nivel: true },
+      });
+
+      // Converter pontos em XP (1 ponto = 10 XP)
+      const pontosGanhos = 3;
+      const xpGanho = pontosGanhos * 10;
+      const { NivelHelper } = await import('../users/helpers/nivel.helper');
+      const { novoXp, novoNivel, subiuNivel } = NivelHelper.adicionarXp(
+        Number(currentUser.xp),
+        Number(currentUser.nivel),
+        xpGanho,
+      );
+
+      // Adiciona 3 pontos por criar post e atualiza XP/nível
       await tx.user.update({
         where: { id: createPostDto.userId },
         data: {
           pontos: {
-            increment: 3,
+            increment: pontosGanhos,
           },
+          xp: novoXp,
+          nivel: novoNivel,
         },
       });
 
-      return post;
+      return { post, nivelAnterior: currentUser.nivel, novoNivel, subiuNivel };
     });
 
     // Verifica conquista de primeiro post (async)
@@ -76,13 +94,20 @@ export class PostsService {
         this.logger.error(`Erro ao verificar conquistas de pontos: ${err.message}`);
       });
 
-    // Atualizar XP e nível (async)
-    this.usersService.updateUserXpAndLevel(createPostDto.userId, 3)
-      .catch(err => {
-        this.logger.error(`Erro ao atualizar XP: ${err.message}`);
+    // Notificar se subiu de nível
+    if (result.subiuNivel) {
+      const { NivelHelper } = await import('../users/helpers/nivel.helper');
+      const titulo = NivelHelper.getTitulo(result.novoNivel);
+      await this.notificacoesService.create({
+        userId: createPostDto.userId,
+        tipo: 'level_up',
+        titulo: `Parabéns! Você subiu para o nível ${result.novoNivel}!`,
+        mensagem: `Você alcançou o nível ${result.novoNivel} e ganhou o título: ${titulo}`,
       });
+      this.logger.log(`Usuário ${createPostDto.userId} subiu para o nível ${result.novoNivel}`);
+    }
 
-    return result;
+    return result.post;
   }
 
   async findAll(paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
@@ -93,15 +118,6 @@ export class PostsService {
       this.prisma.posts.findMany({
         skip,
         take: limit,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          }
-        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -279,32 +295,6 @@ export class PostsService {
         },
         skip,
         take: limit,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          },
-          comentarios: {
-            select: {
-              id: true,
-              userId: true,
-              userName: true,
-              texto: true,
-              createdAt: true,
-            },
-            orderBy: {
-              createdAt: 'desc',
-            },
-          },
-          userLikes: {
-            select: {
-              userId: true,
-            },
-          },
-        },
         orderBy: {
           createdAt: 'desc',
         },

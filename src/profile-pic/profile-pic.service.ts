@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProfilePicDto } from './dto/create-profile-pic.dto';
+import { CreateProfilePicWithUserDto } from './dto/create-profile-pic.dto';
 import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
@@ -17,7 +17,7 @@ export class ProfilePicService {
     private onboardingService: OnboardingService,
   ) {}
 
-  async create(createProfilePicDto: CreateProfilePicDto) {
+  async create(createProfilePicDto: CreateProfilePicWithUserDto) {
     // Cria/atualiza a foto de perfil e adiciona 5 pontos
     const result = await this.prisma.$transaction(async (tx: any) => {
       // Deleta foto antiga se existir (constraint unique no userId)
@@ -27,20 +27,42 @@ export class ProfilePicService {
 
       // Cria a nova foto
       const profilePic = await tx.profilePic.create({
-        data: createProfilePicDto
+        data: {
+          userId: createProfilePicDto.userId,
+          name: createProfilePicDto.name || 'profile-picture',
+          url: createProfilePicDto.url,
+        }
       });
 
-      // Adiciona 5 pontos por upload de foto
+      // Buscar dados atuais do usuário para calcular XP/nível
+      const currentUser = await tx.user.findUnique({
+        where: { id: createProfilePicDto.userId },
+        select: { xp: true, nivel: true },
+      });
+
+      // Converter pontos em XP (1 ponto = 10 XP)
+      const pontosGanhos = 5;
+      const xpGanho = pontosGanhos * 10;
+      const { NivelHelper } = await import('../users/helpers/nivel.helper');
+      const { novoXp, novoNivel, subiuNivel } = NivelHelper.adicionarXp(
+        Number(currentUser.xp),
+        Number(currentUser.nivel),
+        xpGanho,
+      );
+
+      // Adiciona 5 pontos por upload de foto e atualiza XP/nível
       await tx.user.update({
         where: { id: createProfilePicDto.userId },
         data: {
           pontos: {
-            increment: 5,
+            increment: pontosGanhos,
           },
+          xp: novoXp,
+          nivel: novoNivel,
         },
       });
 
-      return profilePic;
+      return { profilePic, nivelAnterior: currentUser.nivel, novoNivel, subiuNivel };
     });
 
     // Verifica conquista de primeira foto (async)
@@ -79,7 +101,20 @@ export class ProfilePicService {
       this.logger.error(`Erro ao verificar onboarding: ${err.message}`);
     });
 
-    return result;
+    // Notificar se subiu de nível
+    if (result.subiuNivel) {
+      const { NivelHelper } = await import('../users/helpers/nivel.helper');
+      const titulo = NivelHelper.getTitulo(result.novoNivel);
+      await this.notificacoesService.create({
+        userId: createProfilePicDto.userId,
+        tipo: 'level_up',
+        titulo: `Parabéns! Você subiu para o nível ${result.novoNivel}!`,
+        mensagem: `Você alcançou o nível ${result.novoNivel} e ganhou o título: ${titulo}`,
+      });
+      this.logger.log(`Usuário ${createProfilePicDto.userId} subiu para o nível ${result.novoNivel}`);
+    }
+
+    return result.profilePic;
   }
 
   async findAll() {
