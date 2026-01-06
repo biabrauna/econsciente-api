@@ -3,7 +3,7 @@ import { Exclude } from 'class-transformer';
 
 export class UserResponseDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'ID único do usuário' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: 'João Silva', description: 'Nome completo do usuário' })
   name: string;

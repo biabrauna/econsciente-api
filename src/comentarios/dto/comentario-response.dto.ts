@@ -2,13 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ComentarioResponseDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439012' })
-  postId: string;
+  postId: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439013' })
-  userId: string;
+  userId: number;
 
   @ApiProperty({ example: 'João Silva' })
   userName: string;

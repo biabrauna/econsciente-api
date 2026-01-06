@@ -30,7 +30,7 @@ export class NotificacoesService {
   /**
    * Lista notificações de um usuário
    */
-  async findByUser(userId: string, onlyUnread = false) {
+  async findByUser(userId: number, onlyUnread = false) {
     const where: any = { userId };
 
     if (onlyUnread) {
@@ -49,7 +49,7 @@ export class NotificacoesService {
   /**
    * Conta notificações não lidas de um usuário
    */
-  async countUnread(userId: string) {
+  async countUnread(userId: number) {
     return this.prisma.notificacao.count({
       where: {
         userId,
@@ -61,7 +61,7 @@ export class NotificacoesService {
   /**
    * Marca uma notificação como lida
    */
-  async markAsRead(id: string, userId: string) {
+  async markAsRead(id: number, userId: number) {
     return this.prisma.notificacao.updateMany({
       where: {
         id,
@@ -76,7 +76,7 @@ export class NotificacoesService {
   /**
    * Marca todas notificações de um usuário como lidas
    */
-  async markAllAsRead(userId: string) {
+  async markAllAsRead(userId: number) {
     return this.prisma.notificacao.updateMany({
       where: {
         userId,
@@ -111,7 +111,7 @@ export class NotificacoesService {
   /**
    * Cria notificação de conquista desbloqueada
    */
-  async notifyConquista(userId: string, conquistaNome: string, conquistaId: string) {
+  async notifyConquista(userId: number, conquistaNome: string, conquistaId: number) {
     return this.create({
       userId,
       tipo: 'conquista',
@@ -124,7 +124,7 @@ export class NotificacoesService {
   /**
    * Cria notificação de novo seguidor
    */
-  async notifyNewFollower(userId: string, followerName: string, followerId: string) {
+  async notifyNewFollower(userId: number, followerName: string, followerId: number) {
     return this.create({
       userId,
       tipo: 'seguidor',
@@ -137,7 +137,7 @@ export class NotificacoesService {
   /**
    * Cria notificação de like em post
    */
-  async notifyLike(userId: string, likerName: string, postId: string, likerId: string) {
+  async notifyLike(userId: number, likerName: string, postId: number, likerId: number) {
     return this.create({
       userId,
       tipo: 'like',

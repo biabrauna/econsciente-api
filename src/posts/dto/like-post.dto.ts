@@ -8,5 +8,5 @@ export class LikePostDto {
     example: '507f1f77bcf86cd799439012',
     description: 'ID do usuário que está curtindo o post'
   })
-  userId: string;
+  userId: number;
 }

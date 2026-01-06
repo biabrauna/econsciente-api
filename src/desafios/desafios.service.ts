@@ -62,7 +62,7 @@ export class DesafiosService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: number) {
     const desafio = await this.prisma.desafios.findUnique({
       where: { id },
     });

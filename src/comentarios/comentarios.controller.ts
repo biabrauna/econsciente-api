@@ -52,7 +52,7 @@ export class ComentariosController {
     type: [ComentarioResponseDto],
   })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  findByPost(@Param('postId') postId: string) {
+  findByPost(@Param('postId') postId: number) {
     return this.comentariosService.findByPost(postId);
   }
 
@@ -61,7 +61,7 @@ export class ComentariosController {
   @ApiParam({ name: 'postId', description: 'ID do post' })
   @ApiResponse({ status: 200, description: 'Número de comentários' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  async count(@Param('postId') postId: string) {
+  async count(@Param('postId') postId: number) {
     const count = await this.comentariosService.count(postId);
     return { count };
   }
@@ -73,7 +73,7 @@ export class ComentariosController {
   @ApiResponse({ status: 200, description: 'Comentário deletado' })
   @ApiResponse({ status: 404, description: 'Comentário não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  remove(@Param('id') id: string, @Query('userId') userId: string) {
+  remove(@Param('id') id: number, @Query('userId') userId: number) {
     return this.comentariosService.remove(id, userId);
   }
 }

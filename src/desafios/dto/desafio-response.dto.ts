@@ -5,7 +5,7 @@ export class DesafioResponseDto {
     example: '507f1f77bcf86cd799439011',
     description: 'ID único do desafio',
   })
-  id: string;
+  id: number;
 
   @ApiProperty({
     example: 'Plantar uma árvore no seu bairro',
@@ -29,19 +29,19 @@ export class DesafioConcluidoResponseDto {
     example: '507f1f77bcf86cd799439011',
     description: 'ID único do desafio concluído',
   })
-  id: string;
+  id: number;
 
   @ApiProperty({
     example: '507f1f77bcf86cd799439012',
     description: 'ID do desafio que foi concluído',
   })
-  desafioId: string;
+  desafioId: number;
 
   @ApiProperty({
     example: '507f1f77bcf86cd799439013',
     description: 'ID do usuário que concluiu o desafio',
   })
-  userId: string;
+  userId: number;
 
   constructor(partial: Partial<DesafioConcluidoResponseDto>) {
     Object.assign(this, partial);

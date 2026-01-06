@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class PostResponseDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'ID único do post' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439012', description: 'ID do usuário que criou o post' })
-  userId: string;
+  userId: number;
 
   @ApiProperty({ 
     example: 'https://example.com/image.jpg', 

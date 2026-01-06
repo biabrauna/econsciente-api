@@ -64,7 +64,7 @@ export class ConquistasService {
   /**
    * Lista conquistas de um usuário específico com status de desbloqueio
    */
-  async findUserConquistas(userId: string): Promise<ConquistaDto[]> {
+  async findUserConquistas(userId: number): Promise<ConquistaDto[]> {
     const todasConquistas = await this.prisma.conquista.findMany({
       orderBy: { tipo: 'asc' },
     });
@@ -100,7 +100,7 @@ export class ConquistasService {
    * Desbloqueia uma conquista para um usuário
    * Retorna true se desbloqueou, false se já estava desbloqueada
    */
-  async unlock(userId: string, conquistaId: string): Promise<boolean> {
+  async unlock(userId: number, conquistaId: number): Promise<boolean> {
     // Verifica se a conquista existe
     const conquista = await this.prisma.conquista.findUnique({
       where: { id: conquistaId },
@@ -200,7 +200,7 @@ export class ConquistasService {
   /**
    * Verifica e desbloqueia conquistas automaticamente baseado em ações
    */
-  async checkAndUnlock(userId: string, action: string, metadata?: any): Promise<string[]> {
+  async checkAndUnlock(userId: number, action: string, metadata?: any): Promise<string[]> {
     const conquistasDesbloqueadas: string[] = [];
 
     // Busca conquistas que podem ser desbloqueadas com base na ação

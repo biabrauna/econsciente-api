@@ -64,7 +64,7 @@ export class UsersController {
           items: {
             type: 'object',
             properties: {
-              id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+              id: { type: 'number', example: 1 },
               name: { type: 'string', example: 'João Silva' },
               email: { type: 'string', example: 'joao@email.com' },
               age: { type: 'number', example: 25 },
@@ -109,8 +109,8 @@ export class UsersController {
   })
   @ApiParam({
     name: 'id',
-    description: 'ID único do usuário no formato ObjectId do MongoDB',
-    example: '507f1f77bcf86cd799439011',
+    description: 'ID único do usuário (inteiro auto-incremental)',
+    example: '1',
   })
   @ApiResponse({
     status: 200,
@@ -118,7 +118,7 @@ export class UsersController {
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+        id: { type: 'number', example: 1 },
         name: { type: 'string', example: 'João Silva' },
         email: { type: 'string', example: 'joao@email.com' },
         age: { type: 'string', example: '25' },
@@ -141,7 +141,7 @@ export class UsersController {
     description: 'Token de acesso inválido ou ausente',
   })
   @ApiResponse({ status: 500, description: 'Erro interno do servidor' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.usersService.findOne(id);
   }
 
@@ -152,7 +152,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Usuário atualizado com sucesso' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
@@ -162,7 +162,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Usuário deletado com sucesso' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.usersService.remove(id);
   }
 
@@ -174,7 +174,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Lista paginada de posts do usuário' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  getUserPosts(@Param('userId') userId: string, @Query() paginationDto: PaginationDto) {
+  getUserPosts(@Param('userId') userId: number, @Query() paginationDto: PaginationDto) {
     return this.usersService.getUserPosts(userId, paginationDto);
   }
 
@@ -186,7 +186,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Lista paginada de desafios concluídos' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  getUserDesafios(@Param('userId') userId: string, @Query() paginationDto: PaginationDto) {
+  getUserDesafios(@Param('userId') userId: number, @Query() paginationDto: PaginationDto) {
     return this.usersService.getUserDesafios(userId, paginationDto);
   }
 

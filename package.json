@@ -21,7 +21,19 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "vercel-build": "prisma generate && npm run build",
-    "seed:desafios": "ts-node scripts/seed-desafios.ts"
+    "seed:desafios": "ts-node scripts/seed-desafios.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:studio": "prisma studio",
+    "prisma:migrate": "prisma generate && prisma db push",
+    "migrate:to-postgres": "ts-node scripts/migrate-to-postgresql.ts",
+    "check:mongodb": "ts-node scripts/check-mongodb-counts.ts",
+    "check:postgres": "ts-node scripts/check-postgres-counts.ts",
+    "setup:postgres": "node scripts/setup-postgresql.bat",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker logs econsciente-postgres",
+    "docker:reset": "docker-compose down -v && docker-compose up -d"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

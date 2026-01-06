@@ -1,7 +1,7 @@
 import { Injectable, LoggerService } from '@nestjs/common';
 
 interface LogContext {
-  correlationId?: string;
+  correlationId?: number;
   userId?: string;
   method?: string;
   url?: string;
@@ -43,7 +43,7 @@ export class CustomLoggerService implements LoggerService {
   }
 
   // Convenience methods for common log patterns
-  logRequest(method: string, url: string, correlationId: string, userId?: string) {
+  logRequest(method: string, url: string, correlationId: number, userId?: string) {
     this.log('Incoming request', {
       method,
       url,
@@ -53,7 +53,7 @@ export class CustomLoggerService implements LoggerService {
     });
   }
 
-  logResponse(method: string, url: string, statusCode: number, duration: number, correlationId: string) {
+  logResponse(method: string, url: string, statusCode: number, duration: number, correlationId: number) {
     this.log('Response sent', {
       method,
       url,
@@ -64,7 +64,7 @@ export class CustomLoggerService implements LoggerService {
     });
   }
 
-  logUserAction(action: string, userId: string, details?: any) {
+  logUserAction(action: string, userId: number, details?: any) {
     this.log(`User action: ${action}`, {
       userId,
       action,

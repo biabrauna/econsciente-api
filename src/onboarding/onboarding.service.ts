@@ -12,6 +12,8 @@ export interface OnboardingStatusResponse {
   completed: boolean;
   steps: OnboardingSteps;
   totalPoints: number;
+  shouldShow: boolean;
+  skippedAt?: Date;
 }
 
 @Injectable()
@@ -31,7 +33,7 @@ export class OnboardingService {
     private notificacoesService: NotificacoesService,
   ) {}
 
-  async getStatus(userId: string): Promise<OnboardingStatusResponse> {
+  async getStatus(userId: number): Promise<OnboardingStatusResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -48,21 +50,36 @@ export class OnboardingService {
 
     if (user.onboardingSteps) {
       try {
-        steps = JSON.parse(user.onboardingSteps);
+        steps = JSON.parse(user.onboardingSteps as string);
       } catch (error) {
         this.logger.error('Erro ao parsear onboardingSteps:', error);
       }
+    }
+
+    // Determina se deve mostrar o onboarding
+    let shouldShow = !user.onboardingCompleted;
+
+    // Se foi pulado, verifica se já passou tempo suficiente para mostrar novamente
+    if (user.onboardingSkippedAt && !user.onboardingCompleted) {
+      const now = new Date();
+      const skippedAt = new Date(user.onboardingSkippedAt);
+      const hoursSinceSkipped = (now.getTime() - skippedAt.getTime()) / (1000 * 60 * 60);
+
+      // Só mostra novamente após 24 horas ou no próximo login (nova sessão)
+      shouldShow = hoursSinceSkipped >= 24;
     }
 
     return {
       completed: user.onboardingCompleted,
       steps,
       totalPoints: Number(user.pontos),
+      shouldShow,
+      skippedAt: user.onboardingSkippedAt || undefined,
     };
   }
 
   async completeStep(
-    userId: string,
+    userId: number,
     step: 'profilePic' | 'bio' | 'firstChallenge',
   ): Promise<OnboardingStatusResponse> {
     const user = await this.prisma.user.findUnique({
@@ -86,7 +103,7 @@ export class OnboardingService {
 
     if (user.onboardingSteps) {
       try {
-        steps = JSON.parse(user.onboardingSteps);
+        steps = JSON.parse(user.onboardingSteps as string);
       } catch (error) {
         this.logger.error('Erro ao parsear onboardingSteps:', error);
       }
@@ -162,7 +179,7 @@ export class OnboardingService {
     return this.getStatus(userId);
   }
 
-  async checkAndCompleteProfilePic(userId: string): Promise<void> {
+  async checkAndCompleteProfilePic(userId: number): Promise<void> {
     // Verifica se o usuário tem foto de perfil
     const profilePic = await this.prisma.profilePic.findUnique({
       where: { userId },
@@ -173,7 +190,7 @@ export class OnboardingService {
     }
   }
 
-  async checkAndCompleteBio(userId: string): Promise<void> {
+  async checkAndCompleteBio(userId: number): Promise<void> {
     // Verifica se o usuário tem biografia
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -185,7 +202,7 @@ export class OnboardingService {
     }
   }
 
-  async checkAndCompleteFirstChallenge(userId: string): Promise<void> {
+  async checkAndCompleteFirstChallenge(userId: number): Promise<void> {
     // Verifica se o usuário tem desafios concluídos
     const desafiosConcluidos = await this.prisma.desafiosConcluidos.count({
       where: { userId },
@@ -194,5 +211,32 @@ export class OnboardingService {
     if (desafiosConcluidos > 0) {
       await this.completeStep(userId, 'firstChallenge');
     }
+  }
+
+  async skipOnboarding(userId: number): Promise<OnboardingStatusResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    // Se já completou, não precisa pular
+    if (user.onboardingCompleted) {
+      return this.getStatus(userId);
+    }
+
+    // Marca como pulado agora
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        onboardingSkippedAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Usuário ${userId} pulou o onboarding`);
+
+    return this.getStatus(userId);
   }
 }

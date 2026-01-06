@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class NotificacaoDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'ID da notificação' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439012', description: 'ID do usuário' })
-  userId: string;
+  userId: number;
 
   @ApiProperty({
     example: 'conquista',

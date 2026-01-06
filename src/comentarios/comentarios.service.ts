@@ -50,7 +50,7 @@ export class ComentariosService {
     return comentario;
   }
 
-  async findByPost(postId: string) {
+  async findByPost(postId: number) {
     return this.prisma.comentario.findMany({
       where: { postId },
       orderBy: {
@@ -59,7 +59,7 @@ export class ComentariosService {
     });
   }
 
-  async remove(id: string, userId: string) {
+  async remove(id: number, userId: number) {
     const comentario = await this.prisma.comentario.findUnique({
       where: { id },
     });
@@ -78,7 +78,7 @@ export class ComentariosService {
     });
   }
 
-  async count(postId: string): Promise<number> {
+  async count(postId: number): Promise<number> {
     return this.prisma.comentario.count({
       where: { postId },
     });

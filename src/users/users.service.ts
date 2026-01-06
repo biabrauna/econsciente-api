@@ -77,7 +77,7 @@ export class UsersService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
@@ -101,7 +101,7 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: number, updateUserDto: UpdateUserDto) {
     try {
       // Verifica se está atualizando a biografia
       const userBefore = await this.prisma.user.findUnique({
@@ -230,7 +230,7 @@ export class UsersService {
     }
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     try {
       await this.prisma.user.delete({
         where: { id }
@@ -241,7 +241,7 @@ export class UsersService {
     }
   }
 
-  async getUserPosts(userId: string, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+  async getUserPosts(userId: number, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -281,7 +281,7 @@ export class UsersService {
     };
   }
 
-  async getUserDesafios(userId: string, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+  async getUserDesafios(userId: number, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -363,7 +363,7 @@ export class UsersService {
     };
   }
 
-  async updateUserXpAndLevel(userId: string, pontosGanhos: number): Promise<{ xp: number; nivel: number; subiuNivel: boolean }> {
+  async updateUserXpAndLevel(userId: number, pontosGanhos: number): Promise<{ xp: number; nivel: number; subiuNivel: boolean }> {
     // Buscar dados atuais do usuário
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

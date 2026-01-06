@@ -20,19 +20,17 @@ export class ChallengeVerificationDto {
 
   @ApiProperty({
     description: 'ID do desafio a ser concluído',
-    example: '507f1f77bcf86cd799439011'
+    example: 1
   })
-  @IsString({ message: 'ID do desafio deve ser uma string' })
   @IsNotEmpty({ message: 'ID do desafio é obrigatório' })
-  challengeId: string;
+  challengeId: number;
 
   @ApiProperty({
     description: 'ID do usuário que está completando o desafio',
-    example: '507f1f77bcf86cd799439012'
+    example: 1
   })
-  @IsString({ message: 'ID do usuário deve ser uma string' })
   @IsNotEmpty({ message: 'ID do usuário é obrigatório' })
-  userId: string;
+  userId: number;
 
   @ApiPropertyOptional({
     description: 'Se true, usa simulação ao invés das APIs reais',
@@ -74,7 +72,7 @@ export class ChallengeVerificationResponse {
   error?: string;
 
   @ApiPropertyOptional({ description: 'ID do desafio concluído, se aplicável' })
-  challengeCompletedId?: string;
+  challengeCompletedId?: number;
 
   @ApiPropertyOptional({ description: 'Pontos adicionados ao usuário' })
   pointsAwarded?: number;

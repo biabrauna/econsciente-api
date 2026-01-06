@@ -12,7 +12,7 @@ export class SessionsService {
    * Cria uma nova sessão para o usuário
    */
   async createSession(
-    userId: string,
+    userId: number,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<string> {
@@ -79,7 +79,7 @@ export class SessionsService {
   /**
    * Invalida todas as sessões de um usuário
    */
-  async invalidateAllUserSessions(userId: string): Promise<void> {
+  async invalidateAllUserSessions(userId: number): Promise<void> {
     await this.prisma.session.updateMany({
       where: { userId },
       data: { isActive: false },
@@ -91,7 +91,7 @@ export class SessionsService {
   /**
    * Lista todas as sessões ativas de um usuário
    */
-  async getUserActiveSessions(userId: string) {
+  async getUserActiveSessions(userId: number) {
     return this.prisma.session.findMany({
       where: {
         userId,

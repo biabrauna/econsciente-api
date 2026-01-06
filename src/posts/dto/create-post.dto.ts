@@ -8,7 +8,7 @@ export class CreatePostDto {
     example: '507f1f77bcf86cd799439012', 
     description: 'ID do usuário que está criando o post' 
   })
-  userId: string;
+  userId: number;
 
   @IsString()
   @IsNotEmpty({ message: 'A URL é obrigatória' })

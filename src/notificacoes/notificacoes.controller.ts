@@ -60,7 +60,7 @@ export class NotificacoesController {
   @ApiParam({ name: 'id', description: 'ID da notificação' })
   @ApiResponse({ status: 200, description: 'Notificação marcada como lida' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  markAsRead(@Param('id') id: string, @Request() req: any) {
+  markAsRead(@Param('id') id: number, @Request() req: any) {
     return this.notificacoesService.markAsRead(id, req.user.id);
   }
 

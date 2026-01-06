@@ -20,6 +20,19 @@ export class OnboardingStatusDto {
 
   @ApiProperty({ example: 0 })
   totalPoints: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Indica se o onboarding deve ser exibido ao usuário'
+  })
+  shouldShow: boolean;
+
+  @ApiProperty({
+    example: '2026-01-05T12:00:00.000Z',
+    required: false,
+    description: 'Data/hora em que o onboarding foi pulado pela última vez'
+  })
+  skippedAt?: Date;
 }
 
 export class CompleteStepDto {

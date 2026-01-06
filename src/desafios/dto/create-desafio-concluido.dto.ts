@@ -5,10 +5,10 @@ export class CreateDesafioConcluidoDto {
   @IsString()
   @ApiProperty()
   @IsNotEmpty({ message: 'O ID do usuário é obrigatório' })
-  userId: string;
+  userId: number;
 
   @IsString()
   @ApiProperty()
   @IsNotEmpty({ message: 'O ID do desafio é obrigatório' })
-  desafioId: string;
+  desafioId: number;
 }

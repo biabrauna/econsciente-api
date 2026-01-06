@@ -140,7 +140,7 @@ export class PostsService {
     };
   }
 
-  async likePost(postId: string, userId: string) {
+  async likePost(postId: number, userId: number) {
     // Verificar se o usuário já curtiu o post
     const existingLike = await this.prisma.userLike.findUnique({
       where: {
@@ -211,7 +211,7 @@ export class PostsService {
     return result;
   }
 
-  async unlikePost(postId: string, userId: string) {
+  async unlikePost(postId: number, userId: number) {
     // Verificar se o like existe
     const existingLike = await this.prisma.userLike.findUnique({
       where: {
@@ -266,7 +266,7 @@ export class PostsService {
     });
   }
 
-  async getFeed(userId: string, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+  async getFeed(userId: number, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
 

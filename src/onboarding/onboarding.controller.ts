@@ -41,4 +41,19 @@ export class OnboardingController {
   completeStep(@Request() req: any, @Body() dto: CompleteStepDto) {
     return this.onboardingService.completeStep(req.user.id, dto.step);
   }
+
+  @Post('skip')
+  @ApiOperation({
+    summary: 'Pular onboarding',
+    description: 'Permite ao usuário pular o onboarding. Ele só aparecerá novamente após 24 horas ou em uma nova sessão.'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Onboarding pulado com sucesso',
+    type: OnboardingStatusDto,
+  })
+  @ApiResponse({ status: 401, description: 'Token inválido' })
+  skipOnboarding(@Request() req: any) {
+    return this.onboardingService.skipOnboarding(req.user.id);
+  }
 }

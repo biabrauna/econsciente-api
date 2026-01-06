@@ -8,7 +8,7 @@ export class CreateComentarioDto {
     example: '507f1f77bcf86cd799439011',
     description: 'ID do post',
   })
-  postId: string;
+  postId: number;
 
   @IsString()
   @IsNotEmpty({ message: 'O ID do usuário é obrigatório' })
@@ -16,7 +16,7 @@ export class CreateComentarioDto {
     example: '507f1f77bcf86cd799439012',
     description: 'ID do usuário que comentou',
   })
-  userId: string;
+  userId: number;
 
   @IsString()
   @IsNotEmpty({ message: 'O nome do usuário é obrigatório' })

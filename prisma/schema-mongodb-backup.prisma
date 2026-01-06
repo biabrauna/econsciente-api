@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Comentario {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  userId    String   @db.ObjectId
+  userName  String
+  texto     String
+  createdAt DateTime @default(now()) @db.Date
+  updatedAt DateTime @updatedAt @db.Date
+
+  @@index([postId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Conquista {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt        DateTime @db.Date
+  criterio         String
+  descricao        String
+  icone            String
+  nome             String   @unique
+  pontosRecompensa BigInt
+  tipo             String
+  updatedAt        DateTime @db.Date
+
+  @@index([tipo])
+}
+
+model ConquistaUsuario {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  conquistaId      String   @db.ObjectId
+  userId           String   @db.ObjectId
+  desbloqueadaEm   DateTime @default(now()) @db.Date
+
+  @@unique([userId, conquistaId])
+  @@index([userId])
+  @@index([conquistaId])
+}
+
+model Desafios {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @db.Date
+  desafios  String
+  updatedAt DateTime @db.Date
+  valor     BigInt
+
+  @@index([desafios])
+}
+
+model DesafiosConcluidos {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  desafioId   String   @db.ObjectId
+  userId      String   @db.ObjectId
+  completedAt DateTime @default(now()) @db.Date
+
+  @@index([desafioId])
+  @@index([userId])
+  @@index([userId, desafioId])
+}
+
+model Follow {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  followerId  String   @db.ObjectId
+  followingId String   @db.ObjectId
+  createdAt   DateTime @default(now()) @db.Date
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Notificacao {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  tipo      String
+  mensagem  String
+  lida      Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Date
+
+  @@index([userId, lida])
+  @@index([createdAt])
+}
+
+model Posts {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  texto       String
+  imagens     String[]
+  curtidas    Int      @default(0)
+  comentarios Int      @default(0)
+  desafioId   String?  @db.ObjectId
+  createdAt   DateTime @default(now()) @db.Date
+  updatedAt   DateTime @updatedAt @db.Date
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ProfilePic {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId String  @unique @db.ObjectId
+  name   String?
+  url    String
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt    DateTime @db.Date
+  expiresAt    DateTime @db.Date
+  isActive     Boolean
+  lastActivity DateTime @db.Date
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  ipAddress    String?
+  userAgent    String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model User {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  biografia           String
+  createdAt           DateTime @db.Date
+  dataNascimento      DateTime @db.Date
+  email               String   @unique
+  name                String
+  nivel               BigInt
+  onboardingCompleted Boolean
+  onboardingSteps     String?
+  password            String
+  pontos              BigInt
+  seguidores          BigInt
+  seguindo            BigInt
+  updatedAt           DateTime @db.Date
+  xp                  BigInt
+}
+
+model UserLike {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  postId    String   @db.ObjectId
+  createdAt DateTime @default(now()) @db.Date
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}

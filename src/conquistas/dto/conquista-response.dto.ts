@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ConquistaDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'ID da conquista' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: 'Primeira Foto', description: 'Nome da conquista' })
   nome: string;
@@ -28,13 +28,13 @@ export class ConquistaDto {
 
 export class ConquistaUsuarioDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'ID da relação' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439012', description: 'ID do usuário' })
-  userId: string;
+  userId: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'ID da conquista' })
-  conquistaId: string;
+  conquistaId: number;
 
   @ApiProperty({ type: ConquistaDto, description: 'Dados da conquista' })
   conquista: ConquistaDto;

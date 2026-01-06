@@ -52,7 +52,7 @@ export class ConquistasController {
     type: [ConquistaDto]
   })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  findUserConquistas(@Param('userId') userId: string) {
+  findUserConquistas(@Param('userId') userId: number) {
     return this.conquistasService.findUserConquistas(userId);
   }
 

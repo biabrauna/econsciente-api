@@ -106,7 +106,7 @@ export class VisionController {
     }
 
     // Se a análise foi bem-sucedida (confiança >= 0.7), marca o desafio como concluído
-    let challengeCompletedId: string | undefined;
+    let challengeCompletedId: number | undefined;
     let pointsAwarded: number | undefined;
 
     if (visionResult.success && visionResult.confidence >= 0.7) {

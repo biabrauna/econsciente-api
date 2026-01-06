@@ -80,7 +80,7 @@ export class DesafiosController {
   @ApiResponse({ status: 200, description: 'Desafio encontrado' })
   @ApiResponse({ status: 404, description: 'Desafio não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.desafiosService.findOne(id);
   }
 
@@ -90,7 +90,7 @@ export class DesafiosController {
   @ApiResponse({ status: 201, description: 'Desafio completado com sucesso' })
   @ApiResponse({ status: 404, description: 'Desafio não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  completar(@Param('id') id: string, @Request() req: any) {
+  completar(@Param('id') id: number, @Request() req: any) {
     return this.desafiosService.createDesafioConcluido({
       desafioId: id,
       userId: req.user.id,

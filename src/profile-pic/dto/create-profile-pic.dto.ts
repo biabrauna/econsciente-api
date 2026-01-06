@@ -2,9 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsUrl, IsOptional } from 'class-validator';
 
 export class CreateProfilePicDto {
-  @IsString()
   @IsOptional()
-  userId?: string;
+  userId?: number;
 
   @IsString()
   @ApiPropertyOptional({ description: 'Nome do arquivo (opcional)' })
@@ -19,7 +18,6 @@ export class CreateProfilePicDto {
 }
 
 export class CreateProfilePicWithUserDto extends CreateProfilePicDto {
-  @IsString()
   @IsNotEmpty()
-  userId: string;
+  userId: number;
 }

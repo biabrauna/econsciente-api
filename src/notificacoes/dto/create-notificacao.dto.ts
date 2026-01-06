@@ -5,7 +5,7 @@ export class CreateNotificacaoDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439012', description: 'ID do usuário' })
   @IsString()
   @IsNotEmpty()
-  userId: string;
+  userId: number;
 
   @ApiProperty({
     example: 'conquista',

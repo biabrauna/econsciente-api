@@ -66,12 +66,12 @@ export class AuthService {
           biografia: biografia || '',
           createdAt: new Date(),
           updatedAt: new Date(),
-          nivel: BigInt(1),
+          nivel: 1,
           onboardingCompleted: false,
-          pontos: BigInt(0),
-          seguidores: BigInt(0),
-          seguindo: BigInt(0),
-          xp: BigInt(0),
+          pontos: 0,
+          seguidores: 0,
+          seguindo: 0,
+          xp: 0,
         },
       });
       const { password: _, ...userWithoutPassword } = user;
@@ -125,7 +125,7 @@ export class AuthService {
     };
   }
 
-  async logout(userId: string) {
+  async logout(userId: number) {
     try {
       await this.sessionsService.invalidateAllUserSessions(userId);
       this.logger.log(`Logout realizado para usuário ${userId}`);

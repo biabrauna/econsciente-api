@@ -14,7 +14,7 @@ export class FollowService {
   /**
    * Seguir um usuário
    */
-  async follow(followerId: string, followingId: string) {
+  async follow(followerId: number, followingId: number) {
     // Não pode seguir a si mesmo
     if (followerId === followingId) {
       throw new BadRequestException('Você não pode seguir a si mesmo');
@@ -99,7 +99,7 @@ export class FollowService {
   /**
    * Deixar de seguir um usuário
    */
-  async unfollow(followerId: string, followingId: string) {
+  async unfollow(followerId: number, followingId: number) {
     // Verifica se segue
     const existingFollow = await this.prisma.follow.findUnique({
       where: {
@@ -153,7 +153,7 @@ export class FollowService {
   /**
    * Verifica se um usuário segue outro
    */
-  async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+  async isFollowing(followerId: number, followingId: number): Promise<boolean> {
     // Não pode seguir a si mesmo
     if (followerId === followingId) {
       return false;
@@ -179,7 +179,7 @@ export class FollowService {
   /**
    * Lista seguidores de um usuário
    */
-  async getFollowers(userId: string) {
+  async getFollowers(userId: number) {
     try {
       const followers = await this.prisma.follow.findMany({
         where: { followingId: userId },
@@ -211,7 +211,7 @@ export class FollowService {
   /**
    * Lista usuários que um usuário está seguindo
    */
-  async getFollowing(userId: string) {
+  async getFollowing(userId: number) {
     try {
       const following = await this.prisma.follow.findMany({
         where: { followerId: userId },

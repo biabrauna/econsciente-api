@@ -2,13 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class FollowDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'ID do relacionamento' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439012', description: 'ID do seguidor' })
-  followerId: string;
+  followerId: number;
 
   @ApiProperty({ example: '507f1f77bcf86cd799439013', description: 'ID do usuário sendo seguido' })
-  followingId: string;
+  followingId: number;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Data que começou a seguir' })
   createdAt: string;
@@ -16,7 +16,7 @@ export class FollowDto {
 
 export class FollowerDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'ID do usuário' })
-  id: string;
+  id: number;
 
   @ApiProperty({ example: 'João Silva', description: 'Nome do usuário' })
   name: string;
