@@ -10,9 +10,12 @@ async function bootstrap() {
   // Pipe de validação global
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // Remove propriedades que não estão no DTO
+      forbidNonWhitelisted: false, // Não gera erro, apenas remove
+      transform: true, // Transforma payloads em instâncias do DTO
+      transformOptions: {
+        enableImplicitConversion: true, // Converte tipos automaticamente
+      },
     }),
   );
 
