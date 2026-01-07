@@ -22,6 +22,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "vercel-build": "prisma generate && npm run build",
     "seed:desafios": "ts-node scripts/seed-desafios.ts",
+    "seed:conquistas": "ts-node scripts/seed-conquistas.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
