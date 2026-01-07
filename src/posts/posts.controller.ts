@@ -48,8 +48,8 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Post curtido com sucesso' })
   @ApiResponse({ status: 404, description: 'Post não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  likePost(@Param('postId') postId: number, @Body() likePostDto: LikePostDto) {
-    return this.postsService.likePost(postId, likePostDto.userId);
+  likePost(@Param('postId') postId: string, @Body() likePostDto: LikePostDto) {
+    return this.postsService.likePost(Number(postId), likePostDto.userId);
   }
 
   @Patch(':postId/unlike')
@@ -59,8 +59,8 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Like removido com sucesso' })
   @ApiResponse({ status: 404, description: 'Post não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  unlikePost(@Param('postId') postId: number, @Body() likePostDto: LikePostDto) {
-    return this.postsService.unlikePost(postId, likePostDto.userId);
+  unlikePost(@Param('postId') postId: string, @Body() likePostDto: LikePostDto) {
+    return this.postsService.unlikePost(Number(postId), likePostDto.userId);
   }
 
   @Get('feed/:userId')
@@ -70,7 +70,7 @@ export class PostsController {
   @ApiQuery({ name: 'limit', required: false, example: 10, description: 'Itens por página' })
   @ApiResponse({ status: 200, description: 'Feed de posts' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  getFeed(@Param('userId') userId: number, @Query() paginationDto: PaginationDto) {
-    return this.postsService.getFeed(userId, paginationDto);
+  getFeed(@Param('userId') userId: string, @Query() paginationDto: PaginationDto) {
+    return this.postsService.getFeed(Number(userId), paginationDto);
   }
 }

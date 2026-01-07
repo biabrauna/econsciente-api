@@ -24,8 +24,9 @@ export class PostsService {
       const post = await tx.posts.create({
         data: {
           userId: createPostDto.userId,
-          url: createPostDto.url,
-          likes: createPostDto.likes || 0
+          texto: createPostDto.url || '',
+          imagens: createPostDto.url ? [createPostDto.url] : [],
+          curtidas: createPostDto.likes || 0
         },
         include: {
           user: {
@@ -169,7 +170,7 @@ export class PostsService {
       const post = await tx.posts.update({
         where: { id: postId },
         data: {
-          likes: {
+          curtidas: {
             increment: 1,
           },
         },
@@ -242,7 +243,7 @@ export class PostsService {
       const post = await tx.posts.update({
         where: { id: postId },
         data: {
-          likes: {
+          curtidas: {
             decrement: 1,
           },
         },
@@ -278,13 +279,8 @@ export class PostsService {
 
     const followingIds = following.map(f => f.followingId);
 
-    // Se não segue ninguém, retornar posts próprios
-    if (followingIds.length === 0) {
-      followingIds.push(userId);
-    } else {
-      // Incluir posts próprios também
-      followingIds.push(userId);
-    }
+    // Incluir posts próprios sempre
+    followingIds.push(userId);
 
     const [data, total] = await Promise.all([
       this.prisma.posts.findMany({
@@ -297,6 +293,20 @@ export class PostsService {
         take: limit,
         orderBy: {
           createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          userLikes: {
+            select: {
+              userId: true,
+            },
+          },
         },
       }),
       this.prisma.posts.count({

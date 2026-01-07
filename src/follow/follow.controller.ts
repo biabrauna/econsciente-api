@@ -1,4 +1,4 @@
-import { Controller, Post, Delete, Get, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Delete, Get, Param, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -24,7 +24,7 @@ export class FollowController {
   @ApiResponse({ status: 400, description: 'Já segue este usuário ou tentativa de seguir a si mesmo' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  follow(@Param('userId') userId: number, @Request() req: any) {
+  follow(@Param('userId', ParseIntPipe) userId: number, @Request() req: any) {
     return this.followService.follow(req.user.id, userId);
   }
 
@@ -34,7 +34,7 @@ export class FollowController {
   @ApiResponse({ status: 200, description: 'Deixou de seguir com sucesso' })
   @ApiResponse({ status: 400, description: 'Não segue este usuário' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  unfollow(@Param('userId') userId: number, @Request() req: any) {
+  unfollow(@Param('userId', ParseIntPipe) userId: number, @Request() req: any) {
     return this.followService.unfollow(req.user.id, userId);
   }
 
@@ -52,7 +52,7 @@ export class FollowController {
     }
   })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  async isFollowing(@Param('userId') userId: number, @Request() req: any) {
+  async isFollowing(@Param('userId', ParseIntPipe) userId: number, @Request() req: any) {
     const isFollowing = await this.followService.isFollowing(req.user.id, userId);
     return { isFollowing };
   }
@@ -62,7 +62,7 @@ export class FollowController {
   @ApiParam({ name: 'userId', description: 'ID do usuário' })
   @ApiResponse({ status: 200, description: 'Lista de seguidores', type: [FollowerDto] })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  getFollowers(@Param('userId') userId: number) {
+  getFollowers(@Param('userId', ParseIntPipe) userId: number) {
     return this.followService.getFollowers(userId);
   }
 
@@ -71,7 +71,7 @@ export class FollowController {
   @ApiParam({ name: 'userId', description: 'ID do usuário' })
   @ApiResponse({ status: 200, description: 'Lista de usuários seguidos', type: [FollowerDto] })
   @ApiResponse({ status: 401, description: 'Token inválido' })
-  getFollowing(@Param('userId') userId: number) {
+  getFollowing(@Param('userId', ParseIntPipe) userId: number) {
     return this.followService.getFollowing(userId);
   }
 

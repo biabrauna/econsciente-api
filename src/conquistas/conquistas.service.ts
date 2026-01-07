@@ -20,7 +20,7 @@ interface CriterioPerfil {
 
 interface CriterioSocial {
   type: 'social';
-  action: 'first_post' | 'first_like' | 'followers';
+  action: 'first_post' | 'first_like' | 'first_follow' | 'followers';
   count?: number;
 }
 
@@ -268,6 +268,19 @@ export class ConquistasService {
           case 'like_post':
             if (criterio.type === 'social' && criterio.action === 'first_like') {
               shouldUnlock = true;
+            }
+            break;
+
+          case 'follow_user':
+            if (criterio.type === 'social' && criterio.action === 'first_follow') {
+              shouldUnlock = true;
+            }
+            if (criterio.type === 'social' && criterio.action === 'followers' && criterio.count) {
+              const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { seguidores: true },
+              });
+              shouldUnlock = !!(user && user.seguidores >= criterio.count);
             }
             break;
         }

@@ -11,6 +11,40 @@ export class FollowService {
     private notificacoesService: NotificacoesService,
   ) {}
 
+  private async checkFollowConquistas(userId: number, isFollowed: number) {
+    try {
+      const { ConquistasService } = await import('../conquistas/conquistas.service');
+      const conquistasService = new ConquistasService(this.prisma);
+
+      // Verifica conquista de quem seguiu (first_follow)
+      const conquistasFollower = await conquistasService.checkAndUnlock(userId, 'follow_user');
+
+      // Verifica conquista de quem foi seguido (followers count)
+      const conquistasFollowed = await conquistasService.checkAndUnlock(isFollowed, 'follow_user');
+
+      // Notifica conquistas desbloqueadas
+      for (const conquistaNome of conquistasFollower) {
+        const conquista = await this.prisma.conquista.findUnique({
+          where: { nome: conquistaNome },
+        });
+        if (conquista) {
+          await this.notificacoesService.notifyConquista(userId, conquistaNome, conquista.id);
+        }
+      }
+
+      for (const conquistaNome of conquistasFollowed) {
+        const conquista = await this.prisma.conquista.findUnique({
+          where: { nome: conquistaNome },
+        });
+        if (conquista) {
+          await this.notificacoesService.notifyConquista(isFollowed, conquistaNome, conquista.id);
+        }
+      }
+    } catch (err: any) {
+      this.logger.error(`Erro ao verificar conquistas de follow: ${err.message}`);
+    }
+  }
+
   /**
    * Seguir um usuário
    */
@@ -92,6 +126,11 @@ export class FollowService {
         this.logger.error(`Erro ao criar notificação de follow: ${err.message}`);
       });
     }
+
+    // Verifica conquistas (async)
+    this.checkFollowConquistas(followerId, followingId).catch(err => {
+      this.logger.error(`Erro ao verificar conquistas: ${err.message}`);
+    });
 
     return result;
   }
