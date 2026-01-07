@@ -52,9 +52,8 @@ model User {
 model Posts {
   id          Int          @id @default(autoincrement())
   userId      Int
-  texto       String       @db.Text
-  imagens     String[]
-  curtidas    Int          @default(0)
+  url         String       @db.Text
+  likes       Int          @default(0)
   comentarios Int          @default(0)
   desafioId   Int?
   createdAt   DateTime     @default(now())
@@ -64,7 +63,7 @@ model Posts {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   desafio     Desafios?    @relation(fields: [desafioId], references: [id], onDelete: SetNull)
   comentario  Comentario[]
-  likes       UserLike[]
+  userLikes   UserLike[]
 
   @@index([userId])
   @@index([desafioId])
