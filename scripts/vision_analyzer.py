@@ -330,19 +330,29 @@ def main():
     parser = argparse.ArgumentParser(description='Analisa imagem para verificar correspondência com desafio')
     parser.add_argument('--image-url', required=True, help='URL da imagem')
     parser.add_argument('--challenge', required=True, help='Descrição do desafio')
-    parser.add_argument('--provider', choices=['auto', 'claude', 'openai'], default='auto', 
+    parser.add_argument('--provider', choices=['auto', 'claude', 'openai'], default='auto',
                        help='Provider a usar (padrão: auto)')
+    parser.add_argument('--simulate', action='store_true', help='Modo de simulação (sem APIs reais)')
     parser.add_argument('--verbose', action='store_true', help='Saída detalhada')
-    
+
     args = parser.parse_args()
-    
-    analyzer = VisionAnalyzer()
-    result = analyzer.analyze_challenge(
-        args.image_url, 
-        args.challenge,
-        args.provider
-    )
-    
+
+    # Modo de simulação retorna resultado simulado sem usar APIs
+    if args.simulate:
+        result = {
+            'success': True,
+            'confidence': 0.85,
+            'analysis': f'[SIMULAÇÃO] Imagem analisada para o desafio: "{args.challenge}". Esta é uma análise simulada que indica correspondência positiva com o desafio proposto.',
+            'provider': 'simulation'
+        }
+    else:
+        analyzer = VisionAnalyzer()
+        result = analyzer.analyze_challenge(
+            args.image_url,
+            args.challenge,
+            args.provider
+        )
+
     if args.verbose:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
