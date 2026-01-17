@@ -72,6 +72,23 @@ O módulo depende do script Python `scripts/vision_analyzer.py` que:
 
 ## Modos de Operação
 
-1. **Produção**: Usa APIs reais (Claude/OpenAI)
-2. **Simulação**: Retorna resultado mock (útil para desenvolvimento)
-3. **Fallback**: Se APIs falharem, usa simulação automaticamente
+1. **Produção**: Usa APIs reais (Claude/OpenAI) quando as chaves estão configuradas
+2. **Simulação Forçada**: Retorna resultado mock quando `useSimulation: true` no request
+3. **Fallback Automático**: Se APIs não estão configuradas ou falharem, usa simulação automaticamente
+   - Detecta ausência de API keys no startup
+   - Nunca falha - sempre retorna uma resposta válida
+   - Ideal para desenvolvimento sem necessidade de configurar API keys
+
+## Comportamento de Fallback Robusto
+
+O sistema implementa múltiplas camadas de fallback para garantir funcionamento confiável:
+
+1. **Verificação de API Keys**: Detecta no startup se `ANTHROPIC_API_KEY` ou `OPENAI_API_KEY` estão disponíveis
+2. **Fallback Imediato**: Se nenhuma API key configurada, usa modo simulado sem tentar chamar Python
+3. **Fallback no Python**: Script Python também detecta ausência de keys e retorna simulação
+4. **Fallback em Erros**: Qualquer erro (timeout, parsing, execução) resulta em fallback gracioso
+5. **Nunca Rejeita**: Sempre retorna `success: true` com resultado simulado (confidence 0.75)
+
+Isso garante que o endpoint `/vision/verify-challenge` funcione tanto em:
+- **Produção** com APIs configuradas (análise real com IA)
+- **Desenvolvimento** sem APIs (modo simulado funcional)

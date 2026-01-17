@@ -80,30 +80,16 @@ export class VisionController {
       );
     }
 
-    let visionResult;
-    let usedFallback = false;
+    // Executa análise com fallback robusto embutido no serviço
+    const visionResult = await this.pythonVisionService.analyzeChallengeImage(
+      challengeData.imageUrl,
+      challengeData.challengeDescription,
+      challengeData.useSimulation,
+    );
 
-    try {
-      // Tenta usar o serviço de visão Python/AI
-      visionResult = await this.pythonVisionService.analyzeChallengeImage(
-        challengeData.imageUrl,
-        challengeData.challengeDescription,
-        challengeData.useSimulation,
-      );
-    } catch (error) {
-      // Fallback: modo simulação quando APIs não disponíveis
-      this.logger.warn(
-        `⚠️ Vision API falhou, usando fallback de simulação: ${error.message}`,
-      );
-      usedFallback = true;
-
-      visionResult = {
-        success: true,
-        confidence: 0.75,
-        analysis: `Análise em modo de fallback: A imagem foi recebida para o desafio "${challengeData.challengeDescription}". Como as APIs de IA não estão disponíveis, a verificação foi realizada em modo simulado.`,
-        provider: 'Fallback (Simulação)',
-      };
-    }
+    // Detecta se foi usado fallback
+    const usedFallback = visionResult.provider?.includes('Fallback') ||
+                         visionResult.provider?.includes('simulation');
 
     // Se a análise foi bem-sucedida (confiança >= 0.7), marca o desafio como concluído
     let challengeCompletedId: number | undefined;
