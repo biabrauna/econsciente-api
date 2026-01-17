@@ -16,6 +16,7 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { PythonVisionService } from './python-vision.service';
 import { ImageValidatorService } from './image-validator.service';
 import {
@@ -39,6 +40,7 @@ export class VisionController {
   ) {}
 
   @Post('verify-challenge')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 req/min para visão computacional (operação custosa)
   @ApiOperation({
     summary: 'Verifica se uma imagem corresponde a um desafio',
     description:
@@ -53,6 +55,10 @@ export class VisionController {
   @ApiResponse({
     status: 400,
     description: 'Dados de entrada inválidos',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Limite de requisições excedido (5 req/min)',
   })
   @ApiResponse({
     status: 500,

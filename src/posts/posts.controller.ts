@@ -8,6 +8,7 @@ import {
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { LikePostDto } from './dto/like-post.dto';
@@ -22,11 +23,13 @@ export class PostsController {
   constructor(private postsService: PostsService) {}
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 req/min para upload de imagens (operação custosa)
   @ApiOperation({ summary: 'Criar novo post' })
   @ApiBody({ type: CreatePostDto })
   @ApiResponse({ status: 201, description: 'Post criado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Token inválido' })
+  @ApiResponse({ status: 429, description: 'Limite de requisições excedido (10 req/min)' })
   create(@Body() createPostDto: CreatePostDto) {
     return this.postsService.create(createPostDto);
   }
