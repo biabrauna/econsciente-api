@@ -34,7 +34,8 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker logs econsciente-postgres",
-    "docker:reset": "docker-compose down -v && docker-compose up -d"
+    "docker:reset": "docker-compose down -v && docker-compose up -d",
+    "db:apply-triggers": "ts-node scripts/apply-triggers.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

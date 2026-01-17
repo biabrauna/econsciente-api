@@ -156,7 +156,8 @@ export class PostsService {
       throw new Error('Você já curtiu este post');
     }
 
-    // Criar o like e incrementar contador em uma transação
+    // Criar o like em uma transação
+    // O trigger do banco sincronizará automaticamente o contador Posts.curtidas
     const result = await this.prisma.$transaction(async (tx: any) => {
       // Criar registro de like
       await tx.userLike.create({
@@ -166,14 +167,9 @@ export class PostsService {
         },
       });
 
-      // Incrementar contador de likes
-      const post = await tx.posts.update({
+      // Buscar post atualizado (o trigger já atualizou curtidas)
+      const post = await tx.posts.findUnique({
         where: { id: postId },
-        data: {
-          curtidas: {
-            increment: 1,
-          },
-        },
         include: {
           user: {
             select: {
@@ -227,7 +223,8 @@ export class PostsService {
       throw new Error('Você não curtiu este post');
     }
 
-    // Deletar o like e decrementar contador em uma transação
+    // Deletar o like em uma transação
+    // O trigger do banco sincronizará automaticamente o contador Posts.curtidas
     return this.prisma.$transaction(async (tx: any) => {
       // Deletar registro de like
       await tx.userLike.delete({
@@ -239,14 +236,9 @@ export class PostsService {
         },
       });
 
-      // Decrementar contador de likes
-      const post = await tx.posts.update({
+      // Buscar post atualizado (o trigger já atualizou curtidas)
+      const post = await tx.posts.findUnique({
         where: { id: postId },
-        data: {
-          curtidas: {
-            decrement: 1,
-          },
-        },
         include: {
           user: {
             select: {
