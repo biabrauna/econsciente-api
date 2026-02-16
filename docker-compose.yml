@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: econsciente-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: suasenha
+      POSTGRES_DB: fashionai_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: econsciente-api
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    environment:
+      # Sobrescreve o DATABASE_URL para apontar pro container do postgres
+      DATABASE_URL: postgresql://postgres:suasenha@postgres:5432/fashionai_local
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
