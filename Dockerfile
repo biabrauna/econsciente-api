@@ -33,4 +33,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE 3002
 
 # Script de entrypoint: aplica schema no banco e inicia a API
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/src/main"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/main"]
