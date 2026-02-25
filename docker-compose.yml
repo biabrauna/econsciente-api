@@ -19,10 +19,9 @@ services:
 
   api:
     build: .
-    container_name: econsciente-api
     restart: unless-stopped
-    ports:
-      - "3002:3002"
+    expose:
+      - "3002"
     env_file:
       - .env
     environment:
@@ -31,6 +30,30 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    build: .
+    command: ["npx", "prisma", "db", "push", "--skip-generate"]
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://postgres:suasenha@postgres:5432/fashionai_local
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
 
 volumes:
   pgdata:
