@@ -162,15 +162,17 @@ export class DesafiosService {
       await this.notificacoesService.create({
         userId: submissao.userId,
         tipo: 'desafio_aprovado',
+        titulo: 'Desafio aprovado! 🎉',
         mensagem: `Seu desafio "${submissao.desafio.desafios}" foi aprovado! Você ganhou ${pontos} pontos.`,
       });
 
       if (subiuNivel) {
-        const titulo = NivelHelper.getTitulo(novoNivel);
+        const tituloNivel = NivelHelper.getTitulo(novoNivel);
         await this.notificacoesService.create({
           userId: submissao.userId,
           tipo: 'level_up',
-          mensagem: `Parabéns! Você subiu para o nível ${novoNivel} e ganhou o título: ${titulo}`,
+          titulo: `Nível ${novoNivel} desbloqueado! 🚀`,
+          mensagem: `Parabéns! Você subiu para o nível ${novoNivel} e ganhou o título: ${tituloNivel}`,
         });
       }
 
@@ -193,6 +195,7 @@ export class DesafiosService {
       await this.notificacoesService.create({
         userId: submissao.userId,
         tipo: 'desafio_rejeitado',
+        titulo: 'Submissão rejeitada',
         mensagem: `Sua submissão para o desafio "${submissao.desafio.desafios}" foi rejeitada. Tente novamente com uma foto mais clara.`,
       });
 
