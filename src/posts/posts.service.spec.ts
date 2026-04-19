@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { forwardRef } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConquistasService } from '../conquistas/conquistas.service';
@@ -8,7 +8,6 @@ import { UsersService } from '../users/users.service';
 
 describe('PostsService', () => {
   let service: PostsService;
-  let prismaService: PrismaService;
 
   const mockUser = {
     id: 1,
@@ -98,13 +97,18 @@ describe('PostsService', () => {
     }).compile();
 
     service = module.get<PostsService>(PostsService);
-    prismaService = module.get<PrismaService>(PrismaService);
+
+    // jest.clearAllMocks() apaga implementações — restaurar $transaction a cada teste
+    mockPrismaService.$transaction.mockImplementation(async (cb: any) => cb(mockPrismaService));
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // create
+  // ─────────────────────────────────────────────────────────────
   describe('create', () => {
     const createPostDto = {
       userId: mockUser.id,
@@ -112,7 +116,7 @@ describe('PostsService', () => {
       likes: 0,
     };
 
-    it('should create a post and award 3 points to the user', async () => {
+    it('deve criar post e conceder 3 pontos ao usuário', async () => {
       mockPrismaService.posts.create.mockResolvedValue(mockPost);
       mockPrismaService.user.findUnique.mockResolvedValue({ xp: 0, nivel: 1 });
       mockPrismaService.user.update.mockResolvedValue({ pontos: 3, xp: 30, nivel: 1 });
@@ -133,7 +137,18 @@ describe('PostsService', () => {
       );
     });
 
-    it('should set imagens from url field in the post', async () => {
+    it('deve persistir o userId correto no post criado', async () => {
+      mockPrismaService.posts.create.mockResolvedValue(mockPost);
+      mockPrismaService.user.findUnique.mockResolvedValue({ xp: 0, nivel: 1 });
+      mockPrismaService.user.update.mockResolvedValue({});
+
+      await service.create(createPostDto);
+
+      const createCall = mockPrismaService.posts.create.mock.calls[0][0];
+      expect(createCall.data.userId).toBe(mockUser.id);
+    });
+
+    it('deve usar url como imagens e texto do post', async () => {
       mockPrismaService.posts.create.mockResolvedValue(mockPost);
       mockPrismaService.user.findUnique.mockResolvedValue({ xp: 0, nivel: 1 });
       mockPrismaService.user.update.mockResolvedValue({});
@@ -150,13 +165,14 @@ describe('PostsService', () => {
       );
     });
 
-    it('should create empty imagens array when no url is provided', async () => {
-      const dtoNoUrl = { userId: mockUser.id };
+    it('deve criar imagens como array vazio quando url é string vazia', async () => {
+      // url é campo obrigatório no DTO; quando enviada vazia o serviço usa array []
+      const dtoUrlVazia = { userId: mockUser.id, url: '' };
       mockPrismaService.posts.create.mockResolvedValue({ ...mockPost, imagens: [] });
       mockPrismaService.user.findUnique.mockResolvedValue({ xp: 0, nivel: 1 });
       mockPrismaService.user.update.mockResolvedValue({});
 
-      await service.create(dtoNoUrl);
+      await service.create(dtoUrlVazia);
 
       expect(mockPrismaService.posts.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -166,8 +182,11 @@ describe('PostsService', () => {
     });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // findAll
+  // ─────────────────────────────────────────────────────────────
   describe('findAll', () => {
-    it('should return paginated posts', async () => {
+    it('deve retornar posts paginados', async () => {
       const posts = [mockPost];
       mockPrismaService.posts.findMany.mockResolvedValue(posts);
       mockPrismaService.posts.count.mockResolvedValue(1);
@@ -185,7 +204,7 @@ describe('PostsService', () => {
       });
     });
 
-    it('should skip records correctly for page 2', async () => {
+    it('deve aplicar skip correto na página 2', async () => {
       mockPrismaService.posts.findMany.mockResolvedValue([]);
       mockPrismaService.posts.count.mockResolvedValue(15);
 
@@ -198,7 +217,7 @@ describe('PostsService', () => {
       expect(result.meta.hasNextPage).toBe(false);
     });
 
-    it('should return correct meta when there are multiple pages', async () => {
+    it('deve retornar meta correta com múltiplas páginas', async () => {
       mockPrismaService.posts.findMany.mockResolvedValue([mockPost]);
       mockPrismaService.posts.count.mockResolvedValue(25);
 
@@ -208,25 +227,39 @@ describe('PostsService', () => {
       expect(result.meta.hasNextPage).toBe(true);
       expect(result.meta.hasPreviousPage).toBe(false);
     });
+
+    it('deve chamar posts.count sem filtro de userId em findAll global', async () => {
+      mockPrismaService.posts.findMany.mockResolvedValue([]);
+      mockPrismaService.posts.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 10 });
+
+      // count global — sem where
+      expect(mockPrismaService.posts.count).toHaveBeenCalledWith();
+    });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // likePost
+  // ─────────────────────────────────────────────────────────────
   describe('likePost', () => {
-    it('should like a post successfully', async () => {
-      const likedPost = { ...mockPost, userLikes: [{ userId: 2 }] };
+    it('deve curtir um post com sucesso', async () => {
+      const postCurtido = { ...mockPost, userLikes: [{ userId: 2 }] };
       mockPrismaService.userLike.findUnique.mockResolvedValue(null);
       mockPrismaService.userLike.create.mockResolvedValue(mockUserLike);
-      mockPrismaService.posts.findUnique.mockResolvedValue(likedPost);
+      mockPrismaService.posts.findUnique.mockResolvedValue(postCurtido);
       mockPrismaService.user.findUnique.mockResolvedValue({ name: 'Bob' });
 
       const result = await service.likePost(mockPost.id, 2);
 
-      expect(result).toEqual(likedPost);
+      expect(result).toEqual(postCurtido);
       expect(mockPrismaService.userLike.create).toHaveBeenCalledWith({
         data: { userId: 2, postId: mockPost.id },
       });
     });
 
-    it('should throw Error when user already liked the post', async () => {
+    it('deve fazer upsert seguro — não duplica curtida existente', async () => {
+      // findUnique retorna like já existente → deve lançar e NÃO chamar create novamente
       mockPrismaService.userLike.findUnique.mockResolvedValue(mockUserLike);
 
       await expect(service.likePost(mockPost.id, 2)).rejects.toThrow(
@@ -235,35 +268,62 @@ describe('PostsService', () => {
       expect(mockPrismaService.userLike.create).not.toHaveBeenCalled();
     });
 
-    it('should not send notification when liker is the post owner', async () => {
-      const ownPost = { ...mockPost, userId: 2 };
+    it('deve lançar erro com mensagem correta quando post já foi curtido', async () => {
+      mockPrismaService.userLike.findUnique.mockResolvedValue(mockUserLike);
+
+      await expect(service.likePost(mockPost.id, 2)).rejects.toThrow(BadRequestException);
+    });
+
+    it('não deve enviar notificação quando quem curte é o dono do post', async () => {
+      const postPropio = { ...mockPost, userId: 2 };
       mockPrismaService.userLike.findUnique.mockResolvedValue(null);
       mockPrismaService.userLike.create.mockResolvedValue({});
-      mockPrismaService.posts.findUnique.mockResolvedValue(ownPost);
+      mockPrismaService.posts.findUnique.mockResolvedValue(postPropio);
 
-      await service.likePost(ownPost.id, 2);
+      await service.likePost(postPropio.id, 2);
 
-      // notifyLike should not be called when liker === post owner
       expect(mockNotificacoesService.notifyLike).not.toHaveBeenCalled();
     });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // unlikePost
+  // ─────────────────────────────────────────────────────────────
   describe('unlikePost', () => {
-    it('should unlike a post successfully', async () => {
-      const unlikedPost = { ...mockPost, userLikes: [] };
+    it('deve remover curtida com sucesso', async () => {
+      const postSemCurtida = { ...mockPost, userLikes: [] };
       mockPrismaService.userLike.findUnique.mockResolvedValue(mockUserLike);
       mockPrismaService.userLike.delete.mockResolvedValue(mockUserLike);
-      mockPrismaService.posts.findUnique.mockResolvedValue(unlikedPost);
+      mockPrismaService.posts.findUnique.mockResolvedValue(postSemCurtida);
 
       const result = await service.unlikePost(mockPost.id, 2);
 
-      expect(result).toEqual(unlikedPost);
+      expect(result).toEqual(postSemCurtida);
       expect(mockPrismaService.userLike.delete).toHaveBeenCalledWith({
         where: { userId_postId: { userId: 2, postId: mockPost.id } },
       });
     });
 
-    it('should throw Error when like does not exist', async () => {
+    it('deve deletar o registro correto usando chave composta userId_postId', async () => {
+      mockPrismaService.userLike.findUnique.mockResolvedValue(mockUserLike);
+      mockPrismaService.userLike.delete.mockResolvedValue(mockUserLike);
+      mockPrismaService.posts.findUnique.mockResolvedValue({ ...mockPost, userLikes: [] });
+
+      await service.unlikePost(mockPost.id, 2);
+
+      expect(mockPrismaService.userLike.delete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId_postId: {
+              userId: 2,
+              postId: mockPost.id,
+            },
+          },
+        }),
+      );
+    });
+
+    it('deve lançar erro quando curtida não existe', async () => {
       mockPrismaService.userLike.findUnique.mockResolvedValue(null);
 
       await expect(service.unlikePost(mockPost.id, 2)).rejects.toThrow(
@@ -271,10 +331,19 @@ describe('PostsService', () => {
       );
       expect(mockPrismaService.userLike.delete).not.toHaveBeenCalled();
     });
+
+    it('deve lançar BadRequestException quando curtida não existe', async () => {
+      mockPrismaService.userLike.findUnique.mockResolvedValue(null);
+
+      await expect(service.unlikePost(mockPost.id, 2)).rejects.toThrow(BadRequestException);
+    });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // getFeed
+  // ─────────────────────────────────────────────────────────────
   describe('getFeed', () => {
-    it('should return paginated feed with own and followed users posts', async () => {
+    it('deve retornar feed paginado com posts próprios e de seguidos', async () => {
       const followingList = [{ followingId: 3 }, { followingId: 4 }];
       mockPrismaService.follow.findMany.mockResolvedValue(followingList);
       mockPrismaService.posts.findMany.mockResolvedValue([mockPost]);
@@ -283,7 +352,6 @@ describe('PostsService', () => {
       const result = await service.getFeed(mockUser.id, { page: 1, limit: 10 });
 
       expect(result.data).toEqual([mockPost]);
-      // Should include own userId (1) + followed ids (3, 4)
       expect(mockPrismaService.posts.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
@@ -293,7 +361,7 @@ describe('PostsService', () => {
       );
     });
 
-    it('should include own posts when user follows nobody', async () => {
+    it('deve incluir posts próprios quando usuário não segue ninguém', async () => {
       mockPrismaService.follow.findMany.mockResolvedValue([]);
       mockPrismaService.posts.findMany.mockResolvedValue([mockPost]);
       mockPrismaService.posts.count.mockResolvedValue(1);
@@ -308,7 +376,7 @@ describe('PostsService', () => {
       );
     });
 
-    it('should return correct pagination meta for feed', async () => {
+    it('deve retornar meta de paginação correta para feed vazio', async () => {
       mockPrismaService.follow.findMany.mockResolvedValue([]);
       mockPrismaService.posts.findMany.mockResolvedValue([]);
       mockPrismaService.posts.count.mockResolvedValue(0);

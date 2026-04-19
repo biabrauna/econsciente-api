@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 
 describe('NotificacoesService', () => {
   let service: NotificacoesService;
-  let prismaService: PrismaService;
 
   const mockNotificacao = {
     id: 1,
@@ -39,15 +38,17 @@ describe('NotificacoesService', () => {
     }).compile();
 
     service = module.get<NotificacoesService>(NotificacoesService);
-    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // create
+  // ─────────────────────────────────────────────────────────────
   describe('create', () => {
-    it('should create a notification successfully', async () => {
+    it('deve criar uma notificação com sucesso', async () => {
       const dto = {
         userId: 42,
         tipo: 'conquista',
@@ -65,9 +66,17 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should create notification without metadata when metadata is omitted', async () => {
-      const dto = { userId: 42, tipo: 'seguidor', titulo: 'Novo seguidor!', mensagem: 'Alguém te seguiu' };
-      mockPrismaService.notificacao.create.mockResolvedValue({ ...mockNotificacao, metadata: undefined });
+    it('deve criar notificação sem metadata quando omitido', async () => {
+      const dto = {
+        userId: 42,
+        tipo: 'seguidor',
+        titulo: 'Novo seguidor!',
+        mensagem: 'Alguém te seguiu',
+      };
+      mockPrismaService.notificacao.create.mockResolvedValue({
+        ...mockNotificacao,
+        metadata: undefined,
+      });
 
       const result = await service.create(dto);
 
@@ -75,28 +84,56 @@ describe('NotificacoesService', () => {
       expect(mockPrismaService.notificacao.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should strip invalid metadata and create without it', async () => {
+    it('deve ignorar metadata JSON inválido silenciosamente — não quebra o create', async () => {
       const dto = {
         userId: 42,
         tipo: 'like',
         titulo: 'Like!',
         mensagem: 'Alguém curtiu seu post',
-        metadata: '{invalid json}',
+        metadata: '{json invalido}',
       };
-      mockPrismaService.notificacao.create.mockResolvedValue({ ...mockNotificacao, metadata: undefined });
+      mockPrismaService.notificacao.create.mockResolvedValue({
+        ...mockNotificacao,
+        metadata: undefined,
+      });
 
-      const result = await service.create(dto);
+      // Não deve lançar exceção
+      await expect(service.create(dto)).resolves.toBeDefined();
 
-      // metadata should have been set to undefined before persisting
+      // metadata deve ser undefined antes de persistir
       expect(mockPrismaService.notificacao.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ metadata: undefined }),
       });
-      expect(result).toBeDefined();
+    });
+
+    it('deve prosseguir normalmente com metadata JSON válido', async () => {
+      const validMeta = JSON.stringify({ postId: 5, likerId: 3 });
+      const dto = {
+        userId: 42,
+        tipo: 'like',
+        titulo: 'Like!',
+        mensagem: 'Curtida!',
+        metadata: validMeta,
+      };
+      mockPrismaService.notificacao.create.mockResolvedValue({
+        ...mockNotificacao,
+        metadata: validMeta,
+      });
+
+      await service.create(dto);
+
+      // metadata válido deve ser preservado
+      expect(mockPrismaService.notificacao.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ metadata: validMeta }),
+      });
     });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // findByUser
+  // ─────────────────────────────────────────────────────────────
   describe('findByUser', () => {
-    it('should return all notifications for a user', async () => {
+    it('deve retornar todas as notificações do usuário', async () => {
       mockPrismaService.notificacao.findMany.mockResolvedValue([mockNotificacao]);
 
       const result = await service.findByUser(42);
@@ -109,13 +146,13 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should filter only unread notifications when onlyUnread is true', async () => {
-      const unreadNotif = { ...mockNotificacao, lida: false };
-      mockPrismaService.notificacao.findMany.mockResolvedValue([unreadNotif]);
+    it('deve filtrar apenas notificações não lidas quando onlyUnread é true', async () => {
+      const naoLida = { ...mockNotificacao, lida: false };
+      mockPrismaService.notificacao.findMany.mockResolvedValue([naoLida]);
 
       const result = await service.findByUser(42, true);
 
-      expect(result).toEqual([unreadNotif]);
+      expect(result).toEqual([naoLida]);
       expect(mockPrismaService.notificacao.findMany).toHaveBeenCalledWith({
         where: { userId: 42, lida: false },
         orderBy: { createdAt: 'desc' },
@@ -123,7 +160,7 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should return empty array when user has no notifications', async () => {
+    it('deve retornar array vazio quando usuário não tem notificações', async () => {
       mockPrismaService.notificacao.findMany.mockResolvedValue([]);
 
       const result = await service.findByUser(99);
@@ -132,8 +169,11 @@ describe('NotificacoesService', () => {
     });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // countUnread
+  // ─────────────────────────────────────────────────────────────
   describe('countUnread', () => {
-    it('should return count of unread notifications', async () => {
+    it('deve retornar contagem de notificações não lidas', async () => {
       mockPrismaService.notificacao.count.mockResolvedValue(5);
 
       const result = await service.countUnread(42);
@@ -144,17 +184,30 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should return 0 when all notifications are read', async () => {
+    it('deve retornar 0 quando todas as notificações estão lidas', async () => {
       mockPrismaService.notificacao.count.mockResolvedValue(0);
 
       const result = await service.countUnread(42);
 
       expect(result).toBe(0);
     });
+
+    it('deve filtrar apenas pelo userId correto', async () => {
+      mockPrismaService.notificacao.count.mockResolvedValue(3);
+
+      await service.countUnread(7);
+
+      expect(mockPrismaService.notificacao.count).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ userId: 7 }) }),
+      );
+    });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // markAsRead
+  // ─────────────────────────────────────────────────────────────
   describe('markAsRead', () => {
-    it('should mark a specific notification as read for the correct user', async () => {
+    it('deve marcar notificação específica como lida para o usuário correto', async () => {
       mockPrismaService.notificacao.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.markAsRead(1, 42);
@@ -166,7 +219,7 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should update 0 records when notification does not belong to user', async () => {
+    it('deve retornar count 0 quando notificação não pertence ao usuário', async () => {
       mockPrismaService.notificacao.updateMany.mockResolvedValue({ count: 0 });
 
       const result = await service.markAsRead(1, 99);
@@ -175,8 +228,11 @@ describe('NotificacoesService', () => {
     });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // markAllAsRead
+  // ─────────────────────────────────────────────────────────────
   describe('markAllAsRead', () => {
-    it('should mark all unread notifications as read for a user', async () => {
+    it('deve marcar todas as notificações não lidas como lidas para o usuário', async () => {
       mockPrismaService.notificacao.updateMany.mockResolvedValue({ count: 3 });
 
       const result = await service.markAllAsRead(42);
@@ -188,17 +244,43 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should return count 0 when there are no unread notifications', async () => {
+    it('deve atualizar apenas notificações do userId correto — não afeta outros usuários', async () => {
+      mockPrismaService.notificacao.updateMany.mockResolvedValue({ count: 2 });
+
+      await service.markAllAsRead(42);
+
+      const callArgs = mockPrismaService.notificacao.updateMany.mock.calls[0][0];
+      // O where deve ter userId exato — nunca sem userId
+      expect(callArgs.where).toHaveProperty('userId', 42);
+      expect(callArgs.where).not.toHaveProperty('userId', undefined);
+    });
+
+    it('deve retornar count 0 quando não existem notificações não lidas', async () => {
       mockPrismaService.notificacao.updateMany.mockResolvedValue({ count: 0 });
 
       const result = await service.markAllAsRead(42);
 
       expect(result).toEqual({ count: 0 });
     });
+
+    it('deve filtrar apenas por lida: false — não altera notificações já lidas', async () => {
+      mockPrismaService.notificacao.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.markAllAsRead(42);
+
+      expect(mockPrismaService.notificacao.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ lida: false }),
+        }),
+      );
+    });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // notifyConquista
+  // ─────────────────────────────────────────────────────────────
   describe('notifyConquista', () => {
-    it('should call create with tipo conquista and correct data', async () => {
+    it('deve chamar create com tipo conquista e dados corretos', async () => {
       mockPrismaService.notificacao.create.mockResolvedValue(mockNotificacao);
 
       const result = await service.notifyConquista(42, 'Primeiro Passo', 7);
@@ -213,7 +295,7 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should embed the conquista name in the message', async () => {
+    it('deve incluir o nome da conquista na mensagem', async () => {
       mockPrismaService.notificacao.create.mockResolvedValue(mockNotificacao);
 
       await service.notifyConquista(42, 'Eco Guerreiro', 3);
@@ -226,9 +308,16 @@ describe('NotificacoesService', () => {
     });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // notifyNewFollower
+  // ─────────────────────────────────────────────────────────────
   describe('notifyNewFollower', () => {
-    it('should call create with tipo seguidor and correct data', async () => {
-      const mockFollowerNotif = { ...mockNotificacao, tipo: 'seguidor', titulo: 'Novo seguidor! 👥' };
+    it('deve chamar create com tipo seguidor e dados corretos', async () => {
+      const mockFollowerNotif = {
+        ...mockNotificacao,
+        tipo: 'seguidor',
+        titulo: 'Novo seguidor! 👥',
+      };
       mockPrismaService.notificacao.create.mockResolvedValue(mockFollowerNotif);
 
       const result = await service.notifyNewFollower(42, 'Alice', 5);
@@ -243,7 +332,7 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should include follower name in the message', async () => {
+    it('deve incluir o nome do seguidor na mensagem', async () => {
       mockPrismaService.notificacao.create.mockResolvedValue(mockNotificacao);
 
       await service.notifyNewFollower(42, 'Bob', 7);
@@ -256,9 +345,16 @@ describe('NotificacoesService', () => {
     });
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // notifyLike
+  // ─────────────────────────────────────────────────────────────
   describe('notifyLike', () => {
-    it('should call create with tipo like and correct data', async () => {
-      const mockLikeNotif = { ...mockNotificacao, tipo: 'like', titulo: 'Curtida no seu post! ❤️' };
+    it('deve chamar create com tipo like e dados corretos', async () => {
+      const mockLikeNotif = {
+        ...mockNotificacao,
+        tipo: 'like',
+        titulo: 'Curtida no seu post! ❤️',
+      };
       mockPrismaService.notificacao.create.mockResolvedValue(mockLikeNotif);
 
       const result = await service.notifyLike(42, 'Carol', 10, 8);
@@ -273,7 +369,7 @@ describe('NotificacoesService', () => {
       });
     });
 
-    it('should include liker name in the message', async () => {
+    it('deve incluir o nome de quem curtiu na mensagem', async () => {
       mockPrismaService.notificacao.create.mockResolvedValue(mockNotificacao);
 
       await service.notifyLike(42, 'Dave', 10, 9);
