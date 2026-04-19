@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Compila o seed (sem path aliases, só @prisma/client — compila direto)
-RUN npx tsc scripts/seed-desafios.ts \
+RUN npx tsc scripts/seed-desafios.ts scripts/seed-admin.ts \
     --outDir dist/scripts \
     --module commonjs \
     --target es2020 \
@@ -34,4 +34,4 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3002
 
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/scripts/seed-desafios.js && node dist/main"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/scripts/seed-desafios.js && node dist/scripts/seed-admin.js && node dist/main"]

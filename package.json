@@ -23,6 +23,7 @@
     "vercel-build": "prisma generate && npm run build",
     "seed": "ts-node prisma/seed.ts",
     "seed:desafios": "ts-node scripts/seed-desafios.ts",
+    "seed:admin": "ts-node scripts/seed-admin.ts",
     "seed:conquistas": "ts-node scripts/seed-conquistas.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",

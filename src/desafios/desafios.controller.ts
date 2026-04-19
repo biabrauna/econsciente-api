@@ -8,6 +8,8 @@ import { CreateDesafioDto } from './dto/create-desafio.dto';
 import { CreateDesafioSubmetidoDto } from './dto/create-desafio-submetido.dto';
 import { UpdateSubmissaoStatusDto } from './dto/update-submissao-status.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('desafios')
@@ -42,7 +44,9 @@ export class DesafiosController {
   }
 
   @Get('submissoes')
-  @ApiOperation({ summary: 'Listar todas as submissões (admin)' })
+  @Roles('ROOT', 'MODERATOR')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Listar todas as submissões (ROOT/MODERATOR)' })
   @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'PROCESSING', 'SUCCESS', 'ERROR'] })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
@@ -62,10 +66,13 @@ export class DesafiosController {
   }
 
   @Patch('submissoes/:id/status')
-  @ApiOperation({ summary: 'Aprovar ou rejeitar submissão (admin)' })
+  @Roles('ROOT', 'MODERATOR')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Aprovar ou rejeitar submissão (ROOT/MODERATOR)' })
   @ApiParam({ name: 'id', description: 'ID da submissão' })
   @ApiBody({ type: UpdateSubmissaoStatusDto })
   @ApiResponse({ status: 200, description: 'Status atualizado — pontos concedidos se SUCCESS' })
+  @ApiResponse({ status: 403, description: 'Acesso restrito' })
   @ApiResponse({ status: 404, description: 'Submissão não encontrada' })
   @ApiResponse({ status: 400, description: 'Submissão já processada' })
   patchSubmissaoStatus(

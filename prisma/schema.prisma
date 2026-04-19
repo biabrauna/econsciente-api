@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  MODERATOR
+  ROOT
+}
+
 enum SubmissaoStatus {
   PENDING
   PROCESSING
@@ -26,6 +32,7 @@ model User {
   xp                  Int                  @default(0)
   seguidores          Int                  @default(0)
   seguindo            Int                  @default(0)
+  role                Role                 @default(USER)
   onboardingCompleted Boolean              @default(false)
   onboardingSteps     Json?
   createdAt           DateTime             @default(now())
