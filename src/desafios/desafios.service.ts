@@ -1,7 +1,10 @@
-import { Injectable, Logger, Inject, forwardRef, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
-import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
+import { CreateDesafioSubmetidoDto } from './dto/create-desafio-submetido.dto';
+import { UpdateSubmissaoStatusDto } from './dto/update-submissao-status.dto';
 import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
@@ -9,6 +12,17 @@ import { OnboardingService } from '../onboarding/onboarding.service';
 import { UsersService } from '../users/users.service';
 import { NivelHelper } from '../users/helpers/nivel.helper';
 import { awardPointsAndXp } from '../common/helpers/points.helper';
+
+export interface ChallengeValidationJob {
+  submissaoId: number;
+  userId: number;
+  userName: string;
+  desafioId: number;
+  desafioTitle: string;
+  imageUrl: string;
+  pontos: number;
+  submittedAt: string;
+}
 
 @Injectable()
 export class DesafiosService {
@@ -22,6 +36,8 @@ export class DesafiosService {
     private onboardingService: OnboardingService,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
+    @InjectQueue('challenge-validations')
+    private validationQueue: Queue,
   ) {}
 
   async create(createDesafioDto: CreateDesafioDto) {
@@ -42,9 +58,7 @@ export class DesafiosService {
       this.prisma.desafios.findMany({
         skip,
         take: limit,
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: { createdAt: 'desc' },
       }),
       this.prisma.desafios.count(),
     ]);
@@ -65,139 +79,192 @@ export class DesafiosService {
   }
 
   async findOne(id: number) {
-    const desafio = await this.prisma.desafios.findUnique({
-      where: { id },
-    });
-
-    if (!desafio) {
-      throw new NotFoundException('Desafio não encontrado');
-    }
-
+    const desafio = await this.prisma.desafios.findUnique({ where: { id } });
+    if (!desafio) throw new NotFoundException('Desafio não encontrado');
     return desafio;
   }
 
-  async createDesafioConcluido(
-    createDesafioConcluidoDto: CreateDesafioConcluidoDto,
-  ) {
-    // Busca o desafio para pegar os pontos
+  async createDesafioSubmetido(dto: CreateDesafioSubmetidoDto) {
     const desafio = await this.prisma.desafios.findUnique({
-      where: { id: createDesafioConcluidoDto.desafioId },
+      where: { id: dto.desafioId },
+    });
+    if (!desafio) throw new NotFoundException('Desafio não encontrado');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+      select: { id: true, name: true },
+    });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    const submissao = await this.prisma.desafiosSubmetidos.create({
+      data: {
+        userId: dto.userId,
+        desafioId: dto.desafioId,
+        imageUrl: dto.imageUrl,
+        status: 'PENDING',
+      },
+      include: {
+        desafio: true,
+        user: { select: { id: true, name: true, email: true } },
+      },
     });
 
-    // Cria o registro de desafio concluído e adiciona pontos em uma transação
-    const result = await this.prisma.$transaction(async (tx: any) => {
-      // Cria o registro
-      const desafioConcluido = await tx.desafiosConcluidos.create({
-        data: createDesafioConcluidoDto,
-        include: {
-          desafio: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              pontos: true,
-              nivel: true,
-              xp: true,
-            }
-          }
-        }
-      });
+    const job: ChallengeValidationJob = {
+      submissaoId: submissao.id,
+      userId: user.id,
+      userName: user.name,
+      desafioId: desafio.id,
+      desafioTitle: desafio.desafios,
+      imageUrl: dto.imageUrl,
+      pontos: Number(desafio.valor),
+      submittedAt: submissao.submittedAt.toISOString(),
+    };
 
-      // Adiciona pontos ao usuário e atualiza XP/nível
-      let subiuNivel = false;
-      if (desafio && desafio.valor > 0) {
-        const { novoXp, novoNivel, subiuNivel: subiu } = await awardPointsAndXp(
-          tx,
-          createDesafioConcluidoDto.userId,
-          Number(desafio.valor),
-        );
-
-        subiuNivel = subiu;
-
-        // Atualiza os dados do usuário no objeto retornado
-        desafioConcluido.user.xp = novoXp;
-        desafioConcluido.user.nivel = novoNivel;
-      }
-
-      return { desafioConcluido, subiuNivel };
+    await this.validationQueue.add('validate', job, {
+      jobId: `submissao-${submissao.id}`,
+      removeOnComplete: false,
+      removeOnFail: false,
     });
 
-    // Verifica conquistas relacionadas a desafios (async, não bloqueia resposta)
-    this.conquistasService.checkAndUnlock(
-      createDesafioConcluidoDto.userId,
-      'complete_challenge'
-    ).then(async (conquistasDesbloqueadas) => {
-      // Cria notificações para cada conquista desbloqueada
-      for (const conquistaNome of conquistasDesbloqueadas) {
-        const conquista = await this.prisma.conquista.findUnique({
-          where: { nome: conquistaNome },
-        });
-        if (conquista) {
-          await this.notificacoesService.notifyConquista(
-            createDesafioConcluidoDto.userId,
-            conquistaNome,
-            conquista.id
-          );
-        }
-      }
-    }).catch(err => {
-      this.logger.error(`Erro ao verificar conquistas: ${err.message}`);
+    this.logger.log(`Submissão #${submissao.id} enfileirada para validação`);
+
+    return submissao;
+  }
+
+  async patchSubmissaoStatus(id: number, dto: UpdateSubmissaoStatusDto) {
+    const submissao = await this.prisma.desafiosSubmetidos.findUnique({
+      where: { id },
+      include: {
+        desafio: true,
+        user: { select: { id: true, name: true, nivel: true, xp: true } },
+      },
     });
 
-    // Verifica conquistas de pontos (async)
-    if (desafio && desafio.valor > 0) {
-      this.conquistasService.checkAndUnlock(
-        createDesafioConcluidoDto.userId,
-        'earn_points'
-      ).then(async (conquistasDesbloqueadas) => {
-        for (const conquistaNome of conquistasDesbloqueadas) {
-          const conquista = await this.prisma.conquista.findUnique({
-            where: { nome: conquistaNome },
-          });
-          if (conquista) {
-            await this.notificacoesService.notifyConquista(
-              createDesafioConcluidoDto.userId,
-              conquistaNome,
-              conquista.id
-            );
-          }
-        }
-      }).catch(err => {
-        this.logger.error(`Erro ao verificar conquistas de pontos: ${err.message}`);
-      });
+    if (!submissao) throw new NotFoundException('Submissão não encontrada');
 
-      // Marca etapa do onboarding como completa (async)
-      this.onboardingService.checkAndCompleteFirstChallenge(
-        createDesafioConcluidoDto.userId
-      ).catch(err => {
-        this.logger.error(`Erro ao verificar onboarding: ${err.message}`);
-      });
-
-      // Verificar se subiu de nível para notificar
-      if (result.subiuNivel) {
-        const titulo = NivelHelper.getTitulo(Number(result.desafioConcluido.user.nivel));
-        await this.notificacoesService.create({
-          userId: createDesafioConcluidoDto.userId,
-          tipo: 'level_up',
-          titulo: `Parabéns! Você subiu para o nível ${result.desafioConcluido.user.nivel}!`,
-          mensagem: `Você alcançou o nível ${result.desafioConcluido.user.nivel} e ganhou o título: ${titulo}`,
-        });
-        this.logger.log(`Usuário ${createDesafioConcluidoDto.userId} subiu para o nível ${result.desafioConcluido.user.nivel}`);
-      }
+    if (submissao.status !== 'PENDING') {
+      throw new BadRequestException('Só é possível alterar submissões com status PENDING');
     }
 
-    return result.desafioConcluido;
+    const updated = await this.prisma.desafiosSubmetidos.update({
+      where: { id },
+      data: { status: dto.status },
+      include: { desafio: true, user: { select: { id: true, name: true } } },
+    });
+
+    if (dto.status === 'SUCCESS') {
+      const pontos = Number(submissao.desafio.valor);
+
+      const { novoNivel, subiuNivel } = await this.prisma.$transaction(async (tx: any) => {
+        return awardPointsAndXp(tx, submissao.userId, pontos);
+      });
+
+      await this.notificacoesService.create({
+        userId: submissao.userId,
+        tipo: 'desafio_aprovado',
+        mensagem: `Seu desafio "${submissao.desafio.desafios}" foi aprovado! Você ganhou ${pontos} pontos.`,
+      });
+
+      if (subiuNivel) {
+        const titulo = NivelHelper.getTitulo(novoNivel);
+        await this.notificacoesService.create({
+          userId: submissao.userId,
+          tipo: 'level_up',
+          mensagem: `Parabéns! Você subiu para o nível ${novoNivel} e ganhou o título: ${titulo}`,
+        });
+      }
+
+      this.conquistasService.checkAndUnlock(submissao.userId, 'complete_challenge')
+        .then(async (desbloqueadas) => {
+          for (const nome of desbloqueadas) {
+            const conquista = await this.prisma.conquista.findUnique({ where: { nome } });
+            if (conquista) await this.notificacoesService.notifyConquista(submissao.userId, nome, conquista.id);
+          }
+        })
+        .catch(err => this.logger.error(`Erro ao verificar conquistas: ${err.message}`));
+
+      this.onboardingService.checkAndCompleteFirstChallenge(submissao.userId)
+        .catch(err => this.logger.error(`Erro ao verificar onboarding: ${err.message}`));
+
+      this.logger.log(`Submissão #${id} aprovada — userId=${submissao.userId}, pontos=${pontos}`);
+    }
+
+    if (dto.status === 'ERROR') {
+      await this.notificacoesService.create({
+        userId: submissao.userId,
+        tipo: 'desafio_rejeitado',
+        mensagem: `Sua submissão para o desafio "${submissao.desafio.desafios}" foi rejeitada. Tente novamente com uma foto mais clara.`,
+      });
+
+      this.logger.log(`Submissão #${id} rejeitada — userId=${submissao.userId}`);
+    }
+
+    return updated;
+  }
+
+  async findSubmissoes(paginationDto: PaginationDto, status?: string): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 20 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const where = status ? { status: status as any } : {};
+
+    const [data, total] = await Promise.all([
+      this.prisma.desafiosSubmetidos.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { submittedAt: 'desc' },
+        include: {
+          desafio: { select: { id: true, desafios: true, valor: true } },
+          user: { select: { id: true, name: true, email: true } },
+        },
+      }),
+      this.prisma.desafiosSubmetidos.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+    };
+  }
+
+  async findSubmissoesByUser(userId: number, paginationDto: PaginationDto): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.desafiosSubmetidos.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        orderBy: { submittedAt: 'desc' },
+        include: { desafio: { select: { id: true, desafios: true, valor: true } } },
+      }),
+      this.prisma.desafiosSubmetidos.count({ where: { userId } }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+    };
   }
 
   async searchDesafio(search: string) {
     return this.prisma.desafios.findMany({
-      where: {
-        desafios: {
-          contains: search,
-          mode: 'insensitive',
-        },
-      },
+      where: { desafios: { contains: search, mode: 'insensitive' } },
+    });
+  }
+
+  // Mantém compatibilidade com vision.controller
+  async createDesafioConcluido(dto: { desafioId: number; userId: number; imageUrl?: string }) {
+    return this.createDesafioSubmetido({
+      desafioId: dto.desafioId,
+      userId: dto.userId,
+      imageUrl: dto.imageUrl || '',
     });
   }
 }

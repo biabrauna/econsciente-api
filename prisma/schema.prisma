@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum SubmissaoStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  ERROR
+}
+
 model User {
   id                  Int                  @id @default(autoincrement())
   email               String               @unique
@@ -26,7 +33,7 @@ model User {
   onboardingSkippedAt DateTime?
   comentarios         Comentario[]
   conquistas          ConquistaUsuario[]
-  desafiosConcluidos  DesafiosConcluidos[]
+  desafiosSubmetidos  DesafiosSubmetidos[]
   seguindo_rel        Follow[]             @relation("UserFollowing")
   seguidores_rel      Follow[]             @relation("UserFollowers")
   notificacoes        Notificacao[]
@@ -98,25 +105,27 @@ model Desafios {
   valor      Int
   createdAt  DateTime             @default(now())
   updatedAt  DateTime             @updatedAt
-  concluidos DesafiosConcluidos[]
+  submetidos DesafiosSubmetidos[]
   posts      Posts[]
 
   @@index([desafios])
   @@map("desafios")
 }
 
-model DesafiosConcluidos {
-  id          Int      @id @default(autoincrement())
-  desafioId   Int
+model DesafiosSubmetidos {
+  id          Int             @id @default(autoincrement())
   userId      Int
-  completedAt DateTime @default(now())
-  desafio     Desafios @relation(fields: [desafioId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  desafioId   Int
+  imageUrl    String
+  status      SubmissaoStatus @default(PENDING)
+  submittedAt DateTime        @default(now())
+  desafio     Desafios        @relation(fields: [desafioId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, desafioId])
-  @@index([desafioId])
   @@index([userId])
-  @@map("desafios_concluidos")
+  @@index([desafioId])
+  @@index([status])
+  @@map("desafios_submetidos")
 }
 
 model Conquista {

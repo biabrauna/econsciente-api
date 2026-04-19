@@ -111,6 +111,7 @@ export class VisionController {
           await this.desafiosService.createDesafioConcluido({
             desafioId: challengeData.challengeId,
             userId: challengeData.userId,
+            imageUrl: challengeData.imageUrl,
           });
 
         challengeCompletedId = desafioConcluido.id;

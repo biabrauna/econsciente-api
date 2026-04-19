@@ -204,8 +204,8 @@ export class OnboardingService {
 
   async checkAndCompleteFirstChallenge(userId: number): Promise<void> {
     // Verifica se o usuário tem desafios concluídos
-    const desafiosConcluidos = await this.prisma.desafiosConcluidos.count({
-      where: { userId },
+    const desafiosConcluidos = await this.prisma.desafiosSubmetidos.count({
+      where: { userId, status: 'SUCCESS' },
     });
 
     if (desafiosConcluidos > 0) {

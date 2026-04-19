@@ -239,8 +239,8 @@ export class ConquistasService {
 
           case 'complete_challenge':
             if (criterio.type === 'desafios_completados') {
-              const count = await this.prisma.desafiosConcluidos.count({
-                where: { userId },
+              const count = await this.prisma.desafiosSubmetidos.count({
+                where: { userId, status: 'SUCCESS' },
               });
               shouldUnlock = count >= criterio.count;
             }

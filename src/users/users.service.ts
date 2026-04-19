@@ -268,15 +268,14 @@ export class UsersService {
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.desafiosConcluidos.findMany({
+      this.prisma.desafiosSubmetidos.findMany({
         where: { userId },
         skip,
         take: limit,
-        orderBy: {
-          completedAt: 'desc',
-        },
+        orderBy: { submittedAt: 'desc' },
+        include: { desafio: { select: { id: true, desafios: true, valor: true } } },
       }),
-      this.prisma.desafiosConcluidos.count({ where: { userId } }),
+      this.prisma.desafiosSubmetidos.count({ where: { userId } }),
     ]);
 
     const totalPages = Math.ceil(total / limit);

@@ -1,16 +1,12 @@
-import { Controller, Post, Get, Body, Query, UseGuards, Param, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Query, UseGuards, Param, Request } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-  ApiQuery,
-  ApiParam,
+  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth,
+  ApiBody, ApiQuery, ApiParam,
 } from '@nestjs/swagger';
 import { DesafiosService } from './desafios.service';
 import { CreateDesafioDto } from './dto/create-desafio.dto';
-import { CreateDesafioConcluidoDto } from './dto/create-desafio-concluido.dto';
+import { CreateDesafioSubmetidoDto } from './dto/create-desafio-submetido.dto';
+import { UpdateSubmissaoStatusDto } from './dto/update-submissao-status.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
@@ -25,53 +21,66 @@ export class DesafiosController {
   @ApiOperation({ summary: 'Criar novo desafio' })
   @ApiBody({ type: CreateDesafioDto })
   @ApiResponse({ status: 201, description: 'Desafio criado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Token inválido' })
   create(@Body() createDesafioDto: CreateDesafioDto) {
     return this.desafiosService.create(createDesafioDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os desafios com paginação' })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    example: 1,
-    description: 'Número da página',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    example: 10,
-    description: 'Itens por página',
-  })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
   @ApiResponse({ status: 200, description: 'Lista paginada de desafios' })
-  @ApiResponse({ status: 401, description: 'Token inválido' })
   findAll(@Query() paginationDto: PaginationDto) {
     return this.desafiosService.findAll(paginationDto);
   }
 
-  @Post('concluidos')
-  @ApiOperation({ summary: 'Marcar desafio como concluído' })
-  @ApiBody({ type: CreateDesafioConcluidoDto })
-  @ApiResponse({ status: 201, description: 'Desafio marcado como concluído' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Token inválido' })
-  createDesafioConcluido(
-    @Body() createDesafioConcluidoDto: CreateDesafioConcluidoDto,
-  ) {
-    return this.desafiosService.createDesafioConcluido(
-      createDesafioConcluidoDto,
-    );
-  }
-
   @Get('search')
-  @ApiOperation({ summary: 'Buscar desafios' })
+  @ApiOperation({ summary: 'Buscar desafios por texto' })
   @ApiQuery({ name: 'search', description: 'Termo de busca' })
-  @ApiResponse({ status: 200, description: 'Resultados da busca' })
-  @ApiResponse({ status: 401, description: 'Token inválido' })
   searchDesafio(@Query('search') search: string) {
     return this.desafiosService.searchDesafio(search);
+  }
+
+  @Get('submissoes')
+  @ApiOperation({ summary: 'Listar todas as submissões (admin)' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'PROCESSING', 'SUCCESS', 'ERROR'] })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  findSubmissoes(
+    @Query() paginationDto: PaginationDto,
+    @Query('status') status?: string,
+  ) {
+    return this.desafiosService.findSubmissoes(paginationDto, status);
+  }
+
+  @Post('submissoes')
+  @ApiOperation({ summary: 'Submeter desafio para validação' })
+  @ApiBody({ type: CreateDesafioSubmetidoDto })
+  @ApiResponse({ status: 201, description: 'Desafio submetido — aguardando validação' })
+  createDesafioSubmetido(@Body() dto: CreateDesafioSubmetidoDto) {
+    return this.desafiosService.createDesafioSubmetido(dto);
+  }
+
+  @Patch('submissoes/:id/status')
+  @ApiOperation({ summary: 'Aprovar ou rejeitar submissão (admin)' })
+  @ApiParam({ name: 'id', description: 'ID da submissão' })
+  @ApiBody({ type: UpdateSubmissaoStatusDto })
+  @ApiResponse({ status: 200, description: 'Status atualizado — pontos concedidos se SUCCESS' })
+  @ApiResponse({ status: 404, description: 'Submissão não encontrada' })
+  @ApiResponse({ status: 400, description: 'Submissão já processada' })
+  patchSubmissaoStatus(
+    @Param('id') id: number,
+    @Body() dto: UpdateSubmissaoStatusDto,
+  ) {
+    return this.desafiosService.patchSubmissaoStatus(Number(id), dto);
+  }
+
+  @Get('submissoes/me')
+  @ApiOperation({ summary: 'Minhas submissões de desafios' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  findMinhasSubmissoes(@Request() req: any, @Query() paginationDto: PaginationDto) {
+    return this.desafiosService.findSubmissoesByUser(req.user.id, paginationDto);
   }
 
   @Get(':id')
@@ -79,21 +88,7 @@ export class DesafiosController {
   @ApiParam({ name: 'id', description: 'ID do desafio' })
   @ApiResponse({ status: 200, description: 'Desafio encontrado' })
   @ApiResponse({ status: 404, description: 'Desafio não encontrado' })
-  @ApiResponse({ status: 401, description: 'Token inválido' })
   findOne(@Param('id') id: number) {
     return this.desafiosService.findOne(id);
-  }
-
-  @Post(':id/completar')
-  @ApiOperation({ summary: 'Completar desafio' })
-  @ApiParam({ name: 'id', description: 'ID do desafio' })
-  @ApiResponse({ status: 201, description: 'Desafio completado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Desafio não encontrado' })
-  @ApiResponse({ status: 401, description: 'Token inválido' })
-  completar(@Param('id') id: number, @Request() req: any) {
-    return this.desafiosService.createDesafioConcluido({
-      desafioId: id,
-      userId: req.user.id,
-    });
   }
 }
