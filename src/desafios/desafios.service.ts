@@ -7,6 +7,8 @@ import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
 import { UsersService } from '../users/users.service';
+import { NivelHelper } from '../users/helpers/nivel.helper';
+import { awardPointsAndXp } from '../common/helpers/points.helper';
 
 @Injectable()
 export class DesafiosService {
@@ -105,43 +107,17 @@ export class DesafiosService {
       // Adiciona pontos ao usuário e atualiza XP/nível
       let subiuNivel = false;
       if (desafio && desafio.valor > 0) {
-        // Buscar dados atuais do usuário
-        const currentUser = await tx.user.findUnique({
-          where: { id: createDesafioConcluidoDto.userId },
-          select: { xp: true, nivel: true },
-        });
-
-        // Converter pontos em XP (1 ponto = 10 XP)
-        const xpGanho = Number(desafio.valor) * 10;
-        const { NivelHelper } = await import('../users/helpers/nivel.helper');
-        const { novoXp, novoNivel, subiuNivel: subiu } = NivelHelper.adicionarXp(
-          Number(currentUser.xp),
-          Number(currentUser.nivel),
-          xpGanho,
+        const { novoXp, novoNivel, subiuNivel: subiu } = await awardPointsAndXp(
+          tx,
+          createDesafioConcluidoDto.userId,
+          Number(desafio.valor),
         );
 
         subiuNivel = subiu;
 
-        const userUpdated = await tx.user.update({
-          where: { id: createDesafioConcluidoDto.userId },
-          data: {
-            pontos: {
-              increment: desafio.valor,
-            },
-            xp: novoXp,
-            nivel: novoNivel,
-          },
-          select: {
-            pontos: true,
-            nivel: true,
-            xp: true,
-          },
-        });
-
         // Atualiza os dados do usuário no objeto retornado
-        desafioConcluido.user.pontos = userUpdated.pontos;
-        desafioConcluido.user.nivel = userUpdated.nivel;
-        desafioConcluido.user.xp = userUpdated.xp;
+        desafioConcluido.user.xp = novoXp;
+        desafioConcluido.user.nivel = novoNivel;
       }
 
       return { desafioConcluido, subiuNivel };
@@ -200,7 +176,6 @@ export class DesafiosService {
 
       // Verificar se subiu de nível para notificar
       if (result.subiuNivel) {
-        const { NivelHelper } = await import('../users/helpers/nivel.helper');
         const titulo = NivelHelper.getTitulo(Number(result.desafioConcluido.user.nivel));
         await this.notificacoesService.create({
           userId: createDesafioConcluidoDto.userId,

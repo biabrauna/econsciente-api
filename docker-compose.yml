@@ -4,9 +4,9 @@ services:
     container_name: econsciente-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: suasenha
-      POSTGRES_DB: fashionai_local
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-econsciente}
     ports:
       - "5432:5432"
     volumes:
@@ -26,7 +26,7 @@ services:
       - .env
     environment:
       # Sobrescreve o DATABASE_URL para apontar pro container do postgres
-      DATABASE_URL: postgresql://postgres:suasenha@postgres:5432/fashionai_local
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-econsciente}
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://postgres:suasenha@postgres:5432/fashionai_local
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-econsciente}
     depends_on:
       postgres:
         condition: service_healthy

@@ -7,6 +7,7 @@ import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { OnboardingService } from '../onboarding/onboarding.service';
 import { NivelHelper } from './helpers/nivel.helper';
 import { PostsService } from 'src/posts/posts.service';
+import { awardPointsAndXp } from '../common/helpers/points.helper';
 
 @Injectable()
 export class UsersService {
@@ -138,42 +139,14 @@ export class UsersService {
 
         // Adiciona 5 pontos pela primeira biografia e atualiza XP/nível
         if (hadNoBio && hasNewBio) {
-          // Buscar dados atuais para calcular XP/nível
-          const currentUser = await tx.user.findUnique({
-            where: { id },
-            select: { xp: true, nivel: true },
-          });
-
           const pontosGanhos = 5;
-          const xpGanho = pontosGanhos * 10;
-          const { novoXp, novoNivel, subiuNivel } = NivelHelper.adicionarXp(
-            Number(currentUser.xp),
-            Number(currentUser.nivel),
-            xpGanho,
-          );
+          const { novoXp, novoNivel, subiuNivel } = await awardPointsAndXp(tx, id, pontosGanhos);
 
-          const userUpdated = await tx.user.update({
-            where: { id },
-            data: {
-              pontos: {
-                increment: pontosGanhos,
-              },
-              xp: novoXp,
-              nivel: novoNivel,
-            },
-            select: {
-              pontos: true,
-              nivel: true,
-              xp: true,
-            },
-          });
-          updated.pontos = userUpdated.pontos;
-          updated.nivel = userUpdated.nivel;
-          updated.xp = userUpdated.xp;
+          updated.xp = novoXp;
+          updated.nivel = novoNivel;
 
           // Retornar também se subiu de nível
           (updated as any).subiuNivel = subiuNivel;
-          (updated as any).nivelAnterior = currentUser.nivel;
         }
 
         return updated;

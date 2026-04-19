@@ -25,8 +25,6 @@ import { SessionsModule } from '../sessions/sessions.module';
           throw new Error('JWT_SECRET is not defined in environment variables');
         }
 
-        console.log('[AuthModule] Configurando JwtModule com JWT_SECRET:', secret.substring(0, 10) + '...');
-
         return {
           secret: secret,
           signOptions: { expiresIn: '30d' }, // Token JWT válido por 30 dias

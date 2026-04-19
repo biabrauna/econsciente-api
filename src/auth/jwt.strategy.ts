@@ -1,17 +1,17 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(private prisma: PrismaService) {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       throw new Error('JWT_SECRET is not defined in environment variables');
     }
-
-    console.log('[JwtStrategy] Inicializado com JWT_SECRET:', secret.substring(0, 10) + '...');
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -21,8 +21,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: { sub: string; email: string }) {
-    console.log('[JwtStrategy] Validating token payload:', { sub: payload.sub, email: payload.email });
-
     const userId = parseInt(payload.sub, 10);
     if (isNaN(userId)) {
       throw new UnauthorizedException('Token inválido: ID de usuário inválido');
@@ -33,11 +31,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      console.log('[JwtStrategy] User not found for ID:', payload.sub);
+      this.logger.debug(`Usuário não encontrado para o ID: ${userId}`);
       throw new UnauthorizedException('Token inválido: usuário não encontrado');
     }
 
-    console.log('[JwtStrategy] User validated successfully:', user.id);
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }

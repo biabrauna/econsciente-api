@@ -1,10 +1,12 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 import { ConquistasService } from '../conquistas/conquistas.service';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { UsersService } from '../users/users.service';
+import { NivelHelper } from '../users/helpers/nivel.helper';
+import { awardPointsAndXp } from '../common/helpers/points.helper';
 
 @Injectable()
 export class PostsService {
@@ -39,35 +41,11 @@ export class PostsService {
         }
       });
 
-      // Buscar dados atuais do usuário para calcular XP/nível
-      const currentUser = await tx.user.findUnique({
-        where: { id: createPostDto.userId },
-        select: { xp: true, nivel: true },
-      });
-
-      // Converter pontos em XP (1 ponto = 10 XP)
-      const pontosGanhos = 3;
-      const xpGanho = pontosGanhos * 10;
-      const { NivelHelper } = await import('../users/helpers/nivel.helper');
-      const { novoXp, novoNivel, subiuNivel } = NivelHelper.adicionarXp(
-        Number(currentUser.xp),
-        Number(currentUser.nivel),
-        xpGanho,
-      );
-
       // Adiciona 3 pontos por criar post e atualiza XP/nível
-      await tx.user.update({
-        where: { id: createPostDto.userId },
-        data: {
-          pontos: {
-            increment: pontosGanhos,
-          },
-          xp: novoXp,
-          nivel: novoNivel,
-        },
-      });
+      const pontosGanhos = 3;
+      const { novoNivel, subiuNivel } = await awardPointsAndXp(tx, createPostDto.userId, pontosGanhos);
 
-      return { post, nivelAnterior: currentUser.nivel, novoNivel, subiuNivel };
+      return { post, novoNivel, subiuNivel };
     });
 
     // Verifica conquista de primeiro post (async)
@@ -97,7 +75,6 @@ export class PostsService {
 
     // Notificar se subiu de nível
     if (result.subiuNivel) {
-      const { NivelHelper } = await import('../users/helpers/nivel.helper');
       const titulo = NivelHelper.getTitulo(result.novoNivel);
       await this.notificacoesService.create({
         userId: createPostDto.userId,
@@ -153,7 +130,7 @@ export class PostsService {
     });
 
     if (existingLike) {
-      throw new Error('Você já curtiu este post');
+      throw new BadRequestException('Você já curtiu este post');
     }
 
     // Criar o like em uma transação
@@ -220,7 +197,7 @@ export class PostsService {
     });
 
     if (!existingLike) {
-      throw new Error('Você não curtiu este post');
+      throw new BadRequestException('Você não curtiu este post');
     }
 
     // Deletar o like em uma transação
