@@ -14,7 +14,7 @@ export class CreateNotificacaoDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsIn(['conquista', 'seguidor', 'like', 'comentario'])
+  @IsIn(['conquista', 'seguidor', 'like', 'comentario', 'desafio_aprovado', 'desafio_rejeitado'])
   tipo: string;
 
   @ApiProperty({ example: 'Nova conquista desbloqueada!', description: 'Título da notificação' })

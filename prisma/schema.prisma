@@ -186,6 +186,7 @@ model Notificacao {
   id        Int      @id @default(autoincrement())
   userId    Int
   tipo      String
+  titulo    String
   mensagem  String
   lida      Boolean  @default(false)
   createdAt DateTime @default(now())
