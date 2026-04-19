@@ -24,7 +24,7 @@ async function bootstrap() {
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
-    'https://interface-econsciente.vercel.app/'
+    'https://interface-econsciente.vercel.app'
   ];
 
   app.enableCors({
