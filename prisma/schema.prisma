@@ -113,14 +113,16 @@ model Desafios {
 }
 
 model DesafiosSubmetidos {
-  id          Int             @id @default(autoincrement())
-  userId      Int
-  desafioId   Int
-  imageUrl    String
-  status      SubmissaoStatus @default(PENDING)
-  submittedAt DateTime        @default(now())
-  desafio     Desafios        @relation(fields: [desafioId], references: [id], onDelete: Cascade)
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int             @id @default(autoincrement())
+  userId        Int
+  desafioId     Int
+  desafioTitulo String
+  desafioValor  Int
+  imageUrl      String
+  status        SubmissaoStatus @default(PENDING)
+  submittedAt   DateTime        @default(now())
+  desafio       Desafios        @relation(fields: [desafioId], references: [id], onDelete: Cascade)
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([desafioId])

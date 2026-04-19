@@ -100,6 +100,8 @@ export class DesafiosService {
       data: {
         userId: dto.userId,
         desafioId: dto.desafioId,
+        desafioTitulo: desafio.desafios,
+        desafioValor: Number(desafio.valor),
         imageUrl: dto.imageUrl,
         status: 'PENDING',
       },
@@ -114,9 +116,9 @@ export class DesafiosService {
       userId: user.id,
       userName: user.name,
       desafioId: desafio.id,
-      desafioTitle: desafio.desafios,
+      desafioTitle: submissao.desafioTitulo,
       imageUrl: dto.imageUrl,
-      pontos: Number(desafio.valor),
+      pontos: submissao.desafioValor,
       submittedAt: submissao.submittedAt.toISOString(),
     };
 
@@ -153,7 +155,7 @@ export class DesafiosService {
     });
 
     if (dto.status === 'SUCCESS') {
-      const pontos = Number(submissao.desafio.valor);
+      const pontos = submissao.desafioValor;
 
       const { novoNivel, subiuNivel } = await this.prisma.$transaction(async (tx: any) => {
         return awardPointsAndXp(tx, submissao.userId, pontos);
@@ -163,7 +165,7 @@ export class DesafiosService {
         userId: submissao.userId,
         tipo: 'desafio_aprovado',
         titulo: 'Desafio aprovado! 🎉',
-        mensagem: `Seu desafio "${submissao.desafio.desafios}" foi aprovado! Você ganhou ${pontos} pontos.`,
+        mensagem: `Seu desafio "${submissao.desafioTitulo}" foi aprovado! Você ganhou ${pontos} pontos.`,
       });
 
       if (subiuNivel) {
@@ -196,7 +198,7 @@ export class DesafiosService {
         userId: submissao.userId,
         tipo: 'desafio_rejeitado',
         titulo: 'Submissão rejeitada',
-        mensagem: `Sua submissão para o desafio "${submissao.desafio.desafios}" foi rejeitada. Tente novamente com uma foto mais clara.`,
+        mensagem: `Sua submissão para o desafio "${submissao.desafioTitulo}" foi rejeitada. Tente novamente com uma foto mais clara.`,
       });
 
       this.logger.log(`Submissão #${id} rejeitada — userId=${submissao.userId}`);
