@@ -54,7 +54,8 @@ describe('ConquistasService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    desafiosConcluidos: {
+    // Nome correto do model Prisma: desafiosSubmetidos (não desafiosConcluidos)
+    desafiosSubmetidos: {
       count: jest.fn(),
     },
     posts: {
@@ -76,6 +77,9 @@ describe('ConquistasService', () => {
 
     service = module.get<ConquistasService>(ConquistasService);
     prismaService = module.get<PrismaService>(PrismaService);
+
+    // jest.clearAllMocks() limpa implementações — restaurar $transaction a cada teste
+    mockPrismaService.$transaction.mockImplementation(async (cb: any) => cb(mockPrismaService));
   });
 
   afterEach(() => {
@@ -92,7 +96,7 @@ describe('ConquistasService', () => {
       pontosRecompensa: 10,
     };
 
-    it('should create a conquista successfully', async () => {
+    it('deve criar uma conquista com sucesso', async () => {
       mockPrismaService.conquista.create.mockResolvedValue(mockConquista);
 
       const result = await service.create(createDto);
@@ -103,7 +107,7 @@ describe('ConquistasService', () => {
       );
     });
 
-    it('should throw BadRequestException when criterio is invalid JSON', async () => {
+    it('deve lançar BadRequestException quando o criterio não é JSON válido', async () => {
       const invalidDto = { ...createDto, criterio: 'not-valid-json{' };
 
       await expect(service.create(invalidDto)).rejects.toThrow(BadRequestException);
@@ -112,7 +116,7 @@ describe('ConquistasService', () => {
       );
     });
 
-    it('should not call prisma.create when criterio is invalid', async () => {
+    it('não deve chamar prisma.create quando o criterio é inválido', async () => {
       const invalidDto = { ...createDto, criterio: '{broken' };
 
       await expect(service.create(invalidDto)).rejects.toThrow(BadRequestException);
@@ -121,7 +125,7 @@ describe('ConquistasService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all conquistas ordered by tipo', async () => {
+    it('deve retornar todas as conquistas ordenadas por tipo', async () => {
       mockPrismaService.conquista.findMany.mockResolvedValue([mockConquista, mockConquistaSocial]);
 
       const result = await service.findAll();
@@ -132,7 +136,7 @@ describe('ConquistasService', () => {
       });
     });
 
-    it('should return empty array when no conquistas exist', async () => {
+    it('deve retornar array vazio quando não existem conquistas', async () => {
       mockPrismaService.conquista.findMany.mockResolvedValue([]);
 
       const result = await service.findAll();
@@ -142,7 +146,7 @@ describe('ConquistasService', () => {
   });
 
   describe('findUserConquistas', () => {
-    it('should return conquistas with desbloqueada status merged', async () => {
+    it('deve retornar conquistas com status de desbloqueio mesclado', async () => {
       const desbloqueadaEm = new Date('2024-06-01');
       mockPrismaService.conquista.findMany.mockResolvedValue([mockConquista, mockConquistaSocial]);
       mockPrismaService.conquistaUsuario.findMany.mockResolvedValue([
@@ -152,8 +156,8 @@ describe('ConquistasService', () => {
       const result = await service.findUserConquistas(mockUser.id);
 
       expect(result).toHaveLength(2);
-      const primeira = result.find((c) => c.id === mockConquista.id);
-      const segunda = result.find((c) => c.id === mockConquistaSocial.id);
+      const primeira = result.find((c) => c.id === mockConquista.id)!;
+      const segunda = result.find((c) => c.id === mockConquistaSocial.id)!;
 
       expect(primeira.desbloqueada).toBe(true);
       expect(primeira.desbloqueadaEm).toBe(desbloqueadaEm.toISOString());
@@ -161,7 +165,7 @@ describe('ConquistasService', () => {
       expect(segunda.desbloqueadaEm).toBeUndefined();
     });
 
-    it('should return all conquistas as locked when user has none unlocked', async () => {
+    it('deve retornar todas as conquistas como bloqueadas quando o usuário não desbloqueou nenhuma', async () => {
       mockPrismaService.conquista.findMany.mockResolvedValue([mockConquista]);
       mockPrismaService.conquistaUsuario.findMany.mockResolvedValue([]);
 
@@ -172,7 +176,7 @@ describe('ConquistasService', () => {
   });
 
   describe('unlock', () => {
-    it('should unlock a conquista and return true', async () => {
+    it('deve desbloquear uma conquista e retornar true', async () => {
       const conquistaSemPontos = { ...mockConquista, pontosRecompensa: 0 };
       mockPrismaService.conquista.findUnique.mockResolvedValue(conquistaSemPontos);
       mockPrismaService.conquistaUsuario.findUnique.mockResolvedValue(null);
@@ -186,7 +190,7 @@ describe('ConquistasService', () => {
       });
     });
 
-    it('should return false when conquista is already unlocked', async () => {
+    it('deve retornar false quando a conquista já foi desbloqueada', async () => {
       mockPrismaService.conquista.findUnique.mockResolvedValue(mockConquista);
       mockPrismaService.conquistaUsuario.findUnique.mockResolvedValue({
         userId: mockUser.id,
@@ -200,7 +204,7 @@ describe('ConquistasService', () => {
       expect(mockPrismaService.conquistaUsuario.create).not.toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException when conquista does not exist', async () => {
+    it('deve lançar NotFoundException quando a conquista não existe', async () => {
       mockPrismaService.conquista.findUnique.mockResolvedValue(null);
 
       await expect(service.unlock(mockUser.id, 999)).rejects.toThrow(NotFoundException);
@@ -212,102 +216,218 @@ describe('ConquistasService', () => {
 
   describe('checkAndUnlock', () => {
     beforeEach(() => {
-      // By default no existing unlock
+      // Por padrão nenhum desbloqueio existente
       mockPrismaService.conquistaUsuario.findUnique.mockResolvedValue(null);
     });
 
-    it('should unlock conquista when complete_challenge action meets count', async () => {
-      mockPrismaService.conquista.findMany.mockResolvedValue([mockConquista]);
-      mockPrismaService.desafiosConcluidos.count.mockResolvedValue(5);
-      // For unlock -> conquista.findUnique then conquistaUsuario.findUnique
-      mockPrismaService.conquista.findUnique.mockResolvedValue(mockConquista);
-      mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockPrismaService.user.update.mockResolvedValue({});
+    // Conquista sem pontos de recompensa para testar apenas a lógica de check
+    // (sem acionar o caminho de XP/nível que requer mocks adicionais)
+    const semPontos = { ...mockConquista, pontosRecompensa: 0 };
 
-      const result = await service.checkAndUnlock(mockUser.id, 'complete_challenge');
+    describe('ação complete_challenge', () => {
+      it('deve desbloquear conquista quando count de desafios atinge o critério', async () => {
+        mockPrismaService.conquista.findMany.mockResolvedValue([semPontos]);
+        mockPrismaService.desafiosSubmetidos.count.mockResolvedValue(5);
+        mockPrismaService.conquista.findUnique.mockResolvedValue(semPontos);
+        mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
 
-      expect(result).toContain(mockConquista.nome);
-    });
+        const result = await service.checkAndUnlock(mockUser.id, 'complete_challenge');
 
-    it('should not unlock when complete_challenge count is not reached', async () => {
-      mockPrismaService.conquista.findMany.mockResolvedValue([mockConquista]);
-      mockPrismaService.desafiosConcluidos.count.mockResolvedValue(0);
-
-      const result = await service.checkAndUnlock(mockUser.id, 'complete_challenge');
-
-      expect(result).toHaveLength(0);
-    });
-
-    it('should unlock conquista for create_post action when post count >= 1', async () => {
-      mockPrismaService.conquista.findMany.mockResolvedValue([mockConquistaSocial]);
-      mockPrismaService.posts.count.mockResolvedValue(1);
-      mockPrismaService.conquista.findUnique.mockResolvedValue(mockConquistaSocial);
-      mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockPrismaService.user.update.mockResolvedValue({});
-
-      const result = await service.checkAndUnlock(mockUser.id, 'create_post');
-
-      expect(result).toContain(mockConquistaSocial.nome);
-    });
-
-    it('should return empty array when conquista already unlocked', async () => {
-      mockPrismaService.conquista.findMany.mockResolvedValue([mockConquistaSocial]);
-      mockPrismaService.conquistaUsuario.findUnique.mockResolvedValue({
-        userId: mockUser.id,
-        conquistaId: mockConquistaSocial.id,
+        expect(result).toContain(semPontos.nome);
       });
 
-      const result = await service.checkAndUnlock(mockUser.id, 'create_post');
+      it('não deve desbloquear quando o count de desafios não atingiu o critério', async () => {
+        mockPrismaService.conquista.findMany.mockResolvedValue([semPontos]);
+        mockPrismaService.desafiosSubmetidos.count.mockResolvedValue(0);
 
-      expect(result).toHaveLength(0);
+        const result = await service.checkAndUnlock(mockUser.id, 'complete_challenge');
+
+        expect(result).toHaveLength(0);
+        expect(mockPrismaService.conquistaUsuario.create).not.toHaveBeenCalled();
+      });
+
+      it('deve chamar desafiosSubmetidos.count com filtro userId e status SUCCESS', async () => {
+        mockPrismaService.conquista.findMany.mockResolvedValue([semPontos]);
+        mockPrismaService.desafiosSubmetidos.count.mockResolvedValue(1);
+        mockPrismaService.conquista.findUnique.mockResolvedValue(semPontos);
+        mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
+
+        await service.checkAndUnlock(mockUser.id, 'complete_challenge');
+
+        expect(mockPrismaService.desafiosSubmetidos.count).toHaveBeenCalledWith({
+          where: { userId: mockUser.id, status: 'SUCCESS' },
+        });
+      });
+
+      it('deve retornar os nomes das conquistas desbloqueadas', async () => {
+        const conquista2 = {
+          ...semPontos,
+          id: 5,
+          nome: 'Eco Guerreiro',
+          criterio: JSON.stringify({ type: 'desafios_completados', count: 5 }),
+        };
+        mockPrismaService.conquista.findMany.mockResolvedValue([semPontos, conquista2]);
+        mockPrismaService.desafiosSubmetidos.count.mockResolvedValue(5);
+        mockPrismaService.conquista.findUnique
+          .mockResolvedValueOnce(semPontos)
+          .mockResolvedValueOnce(conquista2);
+        mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
+
+        const result = await service.checkAndUnlock(mockUser.id, 'complete_challenge');
+
+        expect(result).toContain(semPontos.nome);
+        expect(result).toContain(conquista2.nome);
+        expect(result).toHaveLength(2);
+      });
     });
 
-    it('should unlock for earn_points action when user has enough pontos', async () => {
-      const conquistaPontos = {
-        ...mockConquista,
-        id: 3,
-        nome: 'Centelha Verde',
-        criterio: JSON.stringify({ type: 'pontos_totais', amount: 50 }),
-      };
-      mockPrismaService.conquista.findMany.mockResolvedValue([conquistaPontos]);
-      mockPrismaService.user.findUnique
-        .mockResolvedValueOnce({ pontos: 100 })   // earn_points check
-        .mockResolvedValueOnce(mockUser);           // unlock -> level check
-      mockPrismaService.conquista.findUnique.mockResolvedValue(conquistaPontos);
-      mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
-      mockPrismaService.user.update.mockResolvedValue({});
+    describe('conquista já desbloqueada', () => {
+      it('não deve desbloquear conquista que já foi desbloqueada — findUnique retorna registro existente', async () => {
+        mockPrismaService.conquista.findMany.mockResolvedValue([mockConquistaSocial]);
+        // findUnique retorna registro: conquista já desbloqueada
+        mockPrismaService.conquistaUsuario.findUnique.mockResolvedValue({
+          userId: mockUser.id,
+          conquistaId: mockConquistaSocial.id,
+          desbloqueadaEm: new Date('2024-01-01'),
+        });
 
-      const result = await service.checkAndUnlock(mockUser.id, 'earn_points');
+        const result = await service.checkAndUnlock(mockUser.id, 'create_post');
 
-      expect(result).toContain(conquistaPontos.nome);
+        // Deve retornar array vazio — não desbloqueou nada
+        expect(result).toEqual([]);
+        expect(mockPrismaService.conquistaUsuario.create).not.toHaveBeenCalled();
+      });
     });
 
-    it('should unlock for like_post action on first_like criteria', async () => {
-      const conquistaLike = {
-        ...mockConquista,
-        id: 4,
-        nome: 'Curtidor Consciente',
-        criterio: JSON.stringify({ type: 'social', action: 'first_like' }),
-      };
-      mockPrismaService.conquista.findMany.mockResolvedValue([conquistaLike]);
-      mockPrismaService.conquista.findUnique.mockResolvedValue(conquistaLike);
-      mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockPrismaService.user.update.mockResolvedValue({});
+    describe('ação create_post', () => {
+      const socialSemPontos = { ...mockConquistaSocial, pontosRecompensa: 0 };
 
-      const result = await service.checkAndUnlock(mockUser.id, 'like_post');
+      it('deve desbloquear conquista de primeiro post quando postCount >= 1', async () => {
+        mockPrismaService.conquista.findMany.mockResolvedValue([socialSemPontos]);
+        mockPrismaService.posts.count.mockResolvedValue(1);
+        mockPrismaService.conquista.findUnique.mockResolvedValue(socialSemPontos);
+        mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
 
-      expect(result).toContain(conquistaLike.nome);
+        const result = await service.checkAndUnlock(mockUser.id, 'create_post');
+
+        expect(result).toContain(socialSemPontos.nome);
+      });
+
+      it('não deve desbloquear quando o usuário ainda não tem posts', async () => {
+        mockPrismaService.conquista.findMany.mockResolvedValue([socialSemPontos]);
+        mockPrismaService.posts.count.mockResolvedValue(0);
+
+        const result = await service.checkAndUnlock(mockUser.id, 'create_post');
+
+        expect(result).toHaveLength(0);
+      });
     });
 
-    it('should return empty array when no conquistas match the action', async () => {
-      mockPrismaService.conquista.findMany.mockResolvedValue([mockConquista]);
+    describe('ação earn_points', () => {
+      it('deve desbloquear conquista de pontos quando usuário tem pontos suficientes', async () => {
+        const conquistaPontos = {
+          ...mockConquista,
+          id: 3,
+          nome: 'Centelha Verde',
+          pontosRecompensa: 0,
+          criterio: JSON.stringify({ type: 'pontos_totais', amount: 50 }),
+        };
+        mockPrismaService.conquista.findMany.mockResolvedValue([conquistaPontos]);
+        mockPrismaService.user.findUnique.mockResolvedValue({ pontos: 100 });
+        mockPrismaService.conquista.findUnique.mockResolvedValue(conquistaPontos);
+        mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
 
-      const result = await service.checkAndUnlock(mockUser.id, 'like_post');
+        const result = await service.checkAndUnlock(mockUser.id, 'earn_points');
 
-      expect(result).toHaveLength(0);
+        expect(result).toContain(conquistaPontos.nome);
+      });
+
+      it('não deve desbloquear quando pontos são insuficientes', async () => {
+        const conquistaPontos = {
+          ...mockConquista,
+          id: 3,
+          nome: 'Estrela Eco',
+          criterio: JSON.stringify({ type: 'pontos_totais', amount: 500 }),
+        };
+        mockPrismaService.conquista.findMany.mockResolvedValue([conquistaPontos]);
+        mockPrismaService.user.findUnique.mockResolvedValue({ pontos: 50 });
+
+        const result = await service.checkAndUnlock(mockUser.id, 'earn_points');
+
+        expect(result).toHaveLength(0);
+      });
+    });
+
+    describe('ação like_post', () => {
+      it('deve desbloquear conquista de primeiro like', async () => {
+        const conquistaLike = {
+          ...mockConquista,
+          id: 4,
+          nome: 'Curtidor Consciente',
+          pontosRecompensa: 0,
+          criterio: JSON.stringify({ type: 'social', action: 'first_like' }),
+        };
+        mockPrismaService.conquista.findMany.mockResolvedValue([conquistaLike]);
+        mockPrismaService.conquista.findUnique.mockResolvedValue(conquistaLike);
+        mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
+
+        const result = await service.checkAndUnlock(mockUser.id, 'like_post');
+
+        expect(result).toContain(conquistaLike.nome);
+      });
+    });
+
+    describe('ação não mapeada', () => {
+      it('deve retornar array vazio quando nenhuma conquista corresponde à ação', async () => {
+        mockPrismaService.conquista.findMany.mockResolvedValue([mockConquista]);
+
+        const result = await service.checkAndUnlock(mockUser.id, 'like_post');
+
+        expect(result).toHaveLength(0);
+      });
+    });
+
+    describe('critério JSON malformado', () => {
+      it('não deve lançar exceção quando o criterio está malformado — catch silencioso', async () => {
+        const conquistaCriterioInvalido = {
+          ...mockConquista,
+          id: 99,
+          nome: 'Conquista Quebrada',
+          criterio: '{json_invalido:::}',
+        };
+        mockPrismaService.conquista.findMany.mockResolvedValue([conquistaCriterioInvalido]);
+
+        // O serviço captura o erro internamente e continua
+        await expect(
+          service.checkAndUnlock(mockUser.id, 'complete_challenge'),
+        ).resolves.toEqual([]);
+
+        // Nenhum create deve ter sido chamado
+        expect(mockPrismaService.conquistaUsuario.create).not.toHaveBeenCalled();
+      });
+
+      it('deve continuar processando conquistas válidas mesmo se uma tem criterio inválido', async () => {
+        const conquistaInvalida = {
+          ...mockConquista,
+          id: 99,
+          nome: 'Conquista Quebrada',
+          criterio: 'INVALIDO',
+        };
+        const socialSemPontos = { ...mockConquistaSocial, pontosRecompensa: 0 };
+        mockPrismaService.conquista.findMany.mockResolvedValue([
+          conquistaInvalida,
+          socialSemPontos,
+        ]);
+        mockPrismaService.posts.count.mockResolvedValue(2);
+        mockPrismaService.conquista.findUnique.mockResolvedValue(socialSemPontos);
+        mockPrismaService.conquistaUsuario.create.mockResolvedValue({});
+
+        const result = await service.checkAndUnlock(mockUser.id, 'create_post');
+
+        // A conquista válida deve ter sido desbloqueada; a inválida ignorada
+        expect(result).toContain(socialSemPontos.nome);
+        expect(result).not.toContain(conquistaInvalida.nome);
+      });
     });
   });
 });
