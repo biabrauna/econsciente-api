@@ -21,8 +21,7 @@ EcoConsciente é uma plataforma que gamifica ações sustentáveis através de d
 
 - Node.js >= 18.x
 - npm >= 9.x
-- MongoDB (local ou Atlas)
-- Python 3.x (para módulo de visão)
+- Postgress
 
 ## ⚙️ Instalação
 
@@ -45,30 +44,6 @@ Copie o arquivo `.env.example` para `.env`:
 
 ```bash
 cp .env.example .env
-```
-
-Edite o arquivo `.env` com suas credenciais:
-
-```env
-# Database
-DATABASE_URL="mongodb+srv://username:password@host/database?retryWrites=true&w=majority&appName=AppName"
-
-# API Keys
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
-
-# JWT Configuration (gere um secret forte)
-JWT_SECRET=your_super_secret_jwt_key_here
-
-# Environment
-NODE_ENV=development
-PORT=3000
-
-# CORS Origins (separados por vírgula)
-CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
-
-# Python Configuration
-PYTHON_EXECUTABLE=python3
 ```
 
 **⚠️ IMPORTANTE:** Gere um JWT_SECRET seguro usando:
@@ -159,7 +134,6 @@ A API usa autenticação JWT (JSON Web Token). Para acessar rotas protegidas:
 - ✅ Tratamento global de exceções
 - ✅ Logging customizado
 - ✅ Relacionamentos e índices no banco
-- ✅ Validação de imagens com IA (OpenAI/Anthropic)
 - ✅ Documentação Swagger completa
 - ✅ TypeScript com strict mode
 
@@ -246,30 +220,6 @@ src/
 - ✅ Rate limiting global
 - ✅ Validação de entrada em todos os endpoints
 - ✅ CORS configurável por ambiente
-- ✅ Variáveis sensíveis em .env (não commitadas)
-
-## 🐛 Resolução de Problemas
-
-### Erro de conexão com MongoDB
-
-Verifique se a `DATABASE_URL` está correta no `.env`
-
-### Python não encontrado (Vision module)
-
-Configure `PYTHON_EXECUTABLE=python` no `.env` (Windows) ou `python3` (Linux/Mac)
-
-### Erro de validação JWT
-
-Certifique-se que o `JWT_SECRET` está configurado no `.env`
-
-## 📝 Licença
-
-Este projeto está sob a licença especificada no arquivo LICENSE.
-
-## 👥 Autores
-
-EcoConsciente Team
-
----
+- ✅ Variáveis sensíveis em .env
 
 **Desenvolvido com ❤️ para um planeta mais sustentável 🌍**
